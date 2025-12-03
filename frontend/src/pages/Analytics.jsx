@@ -40,7 +40,7 @@ const Analytics = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:3000/analytics')
+    fetch('http://localhost:3000/api/v1/analytics')
       .then(res => res.json())
       .then(fetchedData => {
         const sorted = fetchedData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());

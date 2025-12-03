@@ -108,7 +108,7 @@ const AlertsDashboard = () => {
 
   useEffect(() => {
     const fetchAlerts = () => {
-      fetch('http://localhost:3000/alerts')
+      fetch('http://localhost:3000/api/v1/alerts')
         .then((res) => res.json())
         .then((data) => {
           const formatted = data.map((item) => ({
