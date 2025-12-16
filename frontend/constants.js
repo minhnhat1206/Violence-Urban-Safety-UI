@@ -9,18 +9,18 @@ export const NAV_ITEMS = [
 ];
 
 export const MOCK_CAMERAS = [
-  { id: 'cam_01', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'P. Bến Nghé', specificLocation: 'Phố đi bộ Nguyễn Huệ', status: 'NORMAL', streamPath: 'cam_01' },
-  { id: 'cam_02', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'P. Bến Thành', specificLocation: 'Chợ Bến Thành', status: 'VIOLENCE_DETECTED', streamPath: 'cam_02' },
-  { id: 'cam_03', city: 'TP. Hồ Chí Minh', district: 'Quận 7', ward: 'P. Tân Phong', specificLocation: 'Cầu Ánh Sao', status: 'NORMAL', streamPath: 'cam_03' },
-  { id: 'cam_04', city: 'TP. Hồ Chí Minh', district: 'Quận Bình Thạnh', ward: 'P. 22', specificLocation: 'Landmark 81', status: 'OFFLINE', streamPath: 'cam_04' },
-  { id: 'cam_05', city: 'TP. Hồ Chí Minh', district: 'Quận 3', ward: 'P. Võ Thị Sáu', specificLocation: 'Dinh Độc Lập', status: 'NORMAL', streamPath: 'cam_05' },
-  { id: 'cam_06', city: 'TP. Hồ Chí Minh', district: 'TP. Thủ Đức', ward: 'P. Thảo Điền', specificLocation: 'Cầu Sài Gòn', status: 'NORMAL', streamPath: 'cam_06' },
-  { id: 'cam_07', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'P. Phạm Ngũ Lão', specificLocation: 'Công viên 23/9', status: 'NORMAL', streamPath: 'cam_07' },
-  { id: 'cam_08', city: 'TP. Hồ Chí Minh', district: 'Quận 5', ward: 'P. 11', specificLocation: 'Chợ An Đông', status: 'VIOLENCE_DETECTED', streamPath: 'cam_08' },
-  { id: 'cam_09', city: 'TP. Hồ Chí Minh', district: 'Quận Tân Bình', ward: 'P. 2', specificLocation: 'Sân bay Tân Sơn Nhất', status: 'NORMAL', streamPath: 'cam_09' },
-  { id: 'cam_10', city: 'TP. Hồ Chí Minh', district: 'TP. Thủ Đức', ward: 'P. Hiệp Phú', specificLocation: 'Ngã tư Thủ Đức', status: 'OFFLINE', streamPath: 'cam_10' },
-  { id: 'cam_11', city: 'TP. Hồ Chí Minh', district: 'Quận 10', ward: 'P. 12', specificLocation: 'Vạn Hạnh Mall', status: 'NORMAL', streamPath: 'cam_11' },
-  { id: 'cam_12', city: 'TP. Hồ Chí Minh', district: 'Quận Gò Vấp', ward: 'P. 10', specificLocation: 'Ngã tư Phan Văn Trị', status: 'NORMAL', streamPath: 'cam_12' },
+  { id: 'cam01', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'P. Bến Nghé', specificLocation: 'Phố đi bộ Nguyễn Huệ', status: 'NORMAL', streamPath: 'cam01' },
+  { id: 'cam02', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'P. Bến Thành', specificLocation: 'Chợ Bến Thành', status: 'VIOLENCE_DETECTED', streamPath: 'cam02' },
+  { id: 'cam03', city: 'TP. Hồ Chí Minh', district: 'Quận 7', ward: 'P. Tân Phong', specificLocation: 'Cầu Ánh Sao', status: 'NORMAL', streamPath: 'cam03' },
+  { id: 'cam04', city: 'TP. Hồ Chí Minh', district: 'Quận Bình Thạnh', ward: 'P. 22', specificLocation: 'Landmark 81', status: 'OFFLINE', streamPath: 'cam04' },
+  { id: 'cam05', city: 'TP. Hồ Chí Minh', district: 'Quận 3', ward: 'P. Võ Thị Sáu', specificLocation: 'Dinh Độc Lập', status: 'NORMAL', streamPath: 'cam05' },
+  { id: 'cam06', city: 'TP. Hồ Chí Minh', district: 'TP. Thủ Đức', ward: 'P. Thảo Điền', specificLocation: 'Cầu Sài Gòn', status: 'NORMAL', streamPath: 'cam06' },
+  { id: 'cam07', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'P. Phạm Ngũ Lão', specificLocation: 'Công viên 23/9', status: 'NORMAL', streamPath: 'cam07' },
+  { id: 'cam08', city: 'TP. Hồ Chí Minh', district: 'Quận 5', ward: 'P. 11', specificLocation: 'Chợ An Đông', status: 'VIOLENCE_DETECTED', streamPath: 'cam08' },
+  { id: 'cam09', city: 'TP. Hồ Chí Minh', district: 'Quận Tân Bình', ward: 'P. 2', specificLocation: 'Sân bay Tân Sơn Nhất', status: 'NORMAL', streamPath: 'cam09' },
+  { id: 'cam10', city: 'TP. Hồ Chí Minh', district: 'TP. Thủ Đức', ward: 'P. Hiệp Phú', specificLocation: 'Ngã tư Thủ Đức', status: 'OFFLINE', streamPath: 'cam10' },
+  { id: 'cam11', city: 'TP. Hồ Chí Minh', district: 'Quận 10', ward: 'P. 12', specificLocation: 'Vạn Hạnh Mall', status: 'NORMAL', streamPath: 'cam11' },
+  { id: 'cam12', city: 'TP. Hồ Chí Minh', district: 'Quận Gò Vấp', ward: 'P. 10', specificLocation: 'Ngã tư Phan Văn Trị', status: 'NORMAL', streamPath: 'cam12' },
 ];
 
 const generateTimestamp = (daysAgo) => {
