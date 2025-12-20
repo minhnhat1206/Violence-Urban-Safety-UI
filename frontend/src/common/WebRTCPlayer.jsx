@@ -13,7 +13,13 @@ const WebRTCPlayer = ({ streamPath, isMuted = true }) => {
 
     let isCancelled = false;
     let sessionUrl = '';
-    const pc = new RTCPeerConnection();
+    
+    // Thêm tham số cấu hình RTC để giảm buffer
+    const pc = new RTCPeerConnection({
+      bundlePolicy: "max-bundle",
+      rtcpMuxPolicy: "require",
+      iceTransportPolicy: "all"
+    });
 
     const remoteStream = new MediaStream();
     if (videoRef.current) {
@@ -23,7 +29,15 @@ const WebRTCPlayer = ({ streamPath, isMuted = true }) => {
     pc.ontrack = (event) => {
       remoteStream.addTrack(event.track);
     };
-
+    // pc.ontrack = (event) => {
+    //   remoteStream.addTrack(event.track);
+    //   
+    //   // Kiểm tra nếu trình duyệt hỗ trợ playoutDelayHint
+    //   const receiver = pc.getReceivers().find(r => r.track.kind === 'video');
+    //   if (receiver && 'playoutDelayHint' in receiver) {
+    //     receiver.playoutDelayHint = 5.0; // Đặt độ trễ là 5 giây
+    //   }
+    // };
     pc.onconnectionstatechange = () => {
       if (isCancelled) return;
       switch (pc.connectionState) {
@@ -48,7 +62,7 @@ const WebRTCPlayer = ({ streamPath, isMuted = true }) => {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
-        const whepUrl = `http://${window.location.hostname}:8889/${streamPath}/whep`;
+        const whepUrl = `http://192.168.0.200:8889/${streamPath}/whep`;
 
         const response = await fetch(whepUrl, {
           method: 'POST',

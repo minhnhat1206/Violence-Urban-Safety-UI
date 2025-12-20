@@ -12,7 +12,7 @@ export const MOCK_CAMERAS = [
   { id: 'cam01', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'P. Bến Nghé', specificLocation: 'Phố đi bộ Nguyễn Huệ', status: 'NORMAL', streamPath: 'cam01' },
   { id: 'cam02', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'P. Bến Thành', specificLocation: 'Chợ Bến Thành', status: 'VIOLENCE_DETECTED', streamPath: 'cam02' },
   { id: 'cam03', city: 'TP. Hồ Chí Minh', district: 'Quận 7', ward: 'P. Tân Phong', specificLocation: 'Cầu Ánh Sao', status: 'NORMAL', streamPath: 'cam03' },
-  { id: 'cam04', city: 'TP. Hồ Chí Minh', district: 'Quận Bình Thạnh', ward: 'P. 22', specificLocation: 'Landmark 81', status: 'OFFLINE', streamPath: 'cam04' },
+  { id: 'cam04', city: 'TP. Hồ Chí Minh', district: 'Quận Bình Thạnh', ward: 'P. 22', specificLocation: 'Landmark 81', status: 'NORMAL', streamPath: 'cam04' },
   { id: 'cam05', city: 'TP. Hồ Chí Minh', district: 'Quận 3', ward: 'P. Võ Thị Sáu', specificLocation: 'Dinh Độc Lập', status: 'NORMAL', streamPath: 'cam05' },
   { id: 'cam06', city: 'TP. Hồ Chí Minh', district: 'TP. Thủ Đức', ward: 'P. Thảo Điền', specificLocation: 'Cầu Sài Gòn', status: 'NORMAL', streamPath: 'cam06' },
   { id: 'cam07', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'P. Phạm Ngũ Lão', specificLocation: 'Công viên 23/9', status: 'NORMAL', streamPath: 'cam07' },
@@ -42,3 +42,5 @@ export const MOCK_ALERTS = [
   { event_id: 'EVT-1013', timestamp: generateTimestamp(5), location: 'Dinh Độc Lập', violence_score: 0.89, label: 'Fight', model_version: 'v2.1.1', clip_link: '#', status: 'False Alarm' },
   { event_id: 'EVT-1012', timestamp: generateTimestamp(6), location: 'Chợ An Đông', violence_score: 0.91, label: 'Fight', model_version: 'v2.1.1', clip_link: '#', status: 'Reviewed' },
 ];
+
+export const API_BASE_URL = "http://192.168.0.200:5000/api";
