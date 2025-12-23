@@ -1,6 +1,9 @@
 const axios = require('axios');
 const config = require('../config');
 
+/**
+ * Hàm thực thi SQL dùng chung cho Trino (hỗ trợ SELECT, DELETE, v.v.)
+ */
 const executeTrinoQuery = async (query) => {
   try {
     // 1. Gửi query ban đầu
@@ -24,7 +27,7 @@ const executeTrinoQuery = async (query) => {
       data = data.concat(response.data.data);
     }
 
-    // 2. Loop để lấy hết các trang kết quả (Pagination)
+    // 2. Loop để lấy hết các trang kết quả hoặc đợi query DELETE hoàn tất
     while (nextUri) {
       const nextRes = await axios.get(nextUri, {
         headers: {
@@ -34,20 +37,25 @@ const executeTrinoQuery = async (query) => {
         },
       });
       
+      // Kiểm tra lỗi SQL trong quá trình thực thi
+      if (nextRes.data.error) {
+        console.error("Trino SQL Error:", nextRes.data.error);
+        throw new Error(`Trino Error: ${nextRes.data.error.message}`);
+      }
+
       if (nextRes.data.data) {
         data = data.concat(nextRes.data.data);
       }
-      
-      if (nextRes.data.error) {
-         console.error("Trino SQL Error:", nextRes.data.error);
-         throw new Error(`Trino Error: ${nextRes.data.error.message}`);
-      }
 
       nextUri = nextRes.data.nextUri;
+
+      // Tránh spam request quá nhanh nếu Trino đang xử lý
+      if (nextUri) await new Promise(resolve => setTimeout(resolve, 100));
     }
     
     return data;
   } catch (error) {
+    console.error('Trino Service Error:', error.response?.data || error.message);
     throw error;
   }
 };
