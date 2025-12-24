@@ -19,7 +19,7 @@ const CameraCard = ({ camera, onFocus }) => {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await fetch(`http://192.168.0.200:8000/camera/status/${camera.id}`);
+        const response = await fetch(`http://localhost:8000/camera/status/${camera.id}`);
         const data = await response.json();
         setDynamicStatus({ score: data.score || 0, isOffline: data.status === "offline" });
       } catch (err) {

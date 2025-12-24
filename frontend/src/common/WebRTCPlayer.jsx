@@ -62,7 +62,7 @@ const WebRTCPlayer = ({ streamPath, isMuted = true }) => {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
-        const whepUrl = `http://192.168.0.200:8889/${streamPath}/whep`;
+        const whepUrl = `http://localhost:8889/${streamPath}/whep`;
 
         const response = await fetch(whepUrl, {
           method: 'POST',
