@@ -3,12 +3,13 @@ import App from "../App";
 import Home from "../pages/Home";
 import Profile from "../pages/user/Profile";
 import Logout from "../pages/user/Logout";
-import Header from "../components/layout/Header";  
+import Header from "../components/layout/Header";
 import LiveStreams from "../pages/LiveStreams";
 import AlertsDashboard from "../pages/AlertsDashboard";
 import Analytics from "../pages/Analytics";
 import Chatbot from "../pages/Chatbot";
 import Settings from "../pages/Settings";
+import StreamhouseStatus from "../pages/StreamhouseStatus";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -32,7 +33,11 @@ const router = createBrowserRouter([
       },
       {
         path: "/analytics",
-        element: <Analytics />     
+        element: <Analytics />
+      },
+      {
+        path: "/status",
+        element: <StreamhouseStatus />
       },
       {
         path: "/chatbot",

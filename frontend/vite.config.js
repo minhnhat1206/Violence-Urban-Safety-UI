@@ -28,6 +28,14 @@ export default defineConfig({
         target: 'http://localhost:5002',
         changeOrigin: true,
       },
+      '/api/layer-counts': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
+      '/api/latency': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
       '/health': {
         target: 'http://localhost:5002',
         changeOrigin: true,
