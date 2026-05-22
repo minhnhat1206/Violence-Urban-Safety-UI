@@ -258,8 +258,8 @@ const Chatbot = () => {
       <div className="mb-3 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-400 flex items-center gap-2">
         <Clock className="w-4 h-4 flex-shrink-0" />
         <span>
-          Truy vấn lớp <strong>WARM (Paimon)</strong> có thể mất <strong>3–5 phút</strong> do Flink batch processing từ MinIO.
-          Truy vấn lớp <strong>COLD (Iceberg)</strong> qua Trino chỉ mất ~2–3 giây.
+          Truy vấn lớp <strong>WARM (Paimon)</strong> có thể mất <strong>10–30 giây</strong> qua Trino Paimon connector.
+          Truy vấn lớp <strong>COLD (Iceberg)</strong> qua Trino chỉ mất ~10–20 giây.
         </span>
       </div>
 
@@ -320,6 +320,34 @@ const Chatbot = () => {
                   </div>
                 ) : (
                   renderMarkdown(message.content)
+                )}
+                {/* Direct evidence gallery — renders frame_urls as grid if content has no images */}
+                {message.frame_urls && message.frame_urls.length > 0 && !message.content?.includes('![') && (
+                  <div className="mt-3">
+                    <p className="text-xs text-slate-400 font-semibold mb-2">
+                      Ảnh bằng chứng ({message.frame_urls.length} ảnh):
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {message.frame_urls.slice(0, 12).map((url, i) => (
+                        <div
+                          key={i}
+                          className="relative rounded-lg overflow-hidden border border-slate-600 cursor-pointer group"
+                          onClick={() => setExpandedImg({ src: url, alt: `Ảnh bằng chứng ${i + 1}` })}
+                        >
+                          <img
+                            src={url}
+                            alt={`Ảnh ${i + 1}`}
+                            className="w-full h-20 object-cover group-hover:opacity-90 transition-opacity"
+                            onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition" />
+                        </div>
+                      ))}
+                    </div>
+                    {message.frame_urls.length > 12 && (
+                      <p className="text-xs text-slate-500 mt-1">...và {message.frame_urls.length - 12} ảnh khác</p>
+                    )}
+                  </div>
                 )}
                 {message.role === 'model' && !message.isThinking && (
                   <Citations citations={message.citations} />
