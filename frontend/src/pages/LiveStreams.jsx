@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MOCK_CAMERAS } from '../../constants';
 import {
-  X, Maximize, Radio, AlertTriangle, CheckCircle2,
-  WifiOff, RefreshCw, Activity, Video, VideoOff,
+  X, Maximize, AlertTriangle, CheckCircle2,
+  Video, VideoOff, Settings as SettingsIcon,
 } from 'lucide-react';
-import WebRTCPlayer from '../common/WebRTCPlayer';
+import HLSPlayer from '../common/HLSPlayer';
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+const LS_KEY = 'hls_base_url';
+const API    = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002';
 
 const statusStyle = (status) => {
   switch (status) {
@@ -17,78 +18,29 @@ const statusStyle = (status) => {
   }
 };
 
-const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002';
-
-// ─── Pipeline Status Banner ────────────────────────────────────────────────────
-const PipelineBanner = () => {
-  const [streaming, setStreaming] = useState(null);   // null = loading
-  const [refreshing, setRefreshing] = useState(false);
-
-  const fetchStatus = useCallback(() => {
-    setRefreshing(true);
-    fetch(`${API}/api/streaming-status`)
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(d => { setStreaming(d); setRefreshing(false); })
-      .catch(() => { setStreaming({ mediamtx_ok: false, stream_count: 0, active_streams: [] }); setRefreshing(false); });
-  }, []);
-
-  useEffect(() => {
-    fetchStatus();
-    const id = setInterval(fetchStatus, 10000);
-    return () => clearInterval(id);
-  }, [fetchStatus]);
-
-  const isUp   = streaming?.mediamtx_ok;
-  const count  = streaming?.stream_count ?? 0;
-  const total  = MOCK_CAMERAS.length;
-
+// ─── HLS URL Banner ────────────────────────────────────────────────────────────
+const HlsBanner = ({ hlsUrl }) => {
+  if (hlsUrl) {
+    return (
+      <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg border text-sm
+        bg-emerald-500/10 border-emerald-500/30 text-emerald-400 w-fit">
+        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        HLS active · <span className="font-mono truncate max-w-xs">{hlsUrl}</span>
+      </div>
+    );
+  }
   return (
-    <div className="mb-6 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-      {/* MediaMTX indicator */}
-      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium
-        ${isUp
-          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-          : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
-        {isUp
-          ? <><Radio size={14} className="animate-pulse" /> MediaMTX Online</>
-          : <><WifiOff size={14} /> MediaMTX Offline</>}
-      </div>
-
-      {/* Stream count */}
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-slate-800/50 border-slate-700 text-sm text-slate-300">
-        <Activity size={14} className="text-emerald-400" />
-        <span>
-          <span className="text-white font-semibold">{count}</span>
-          <span className="text-slate-500">/{total}</span> streams live
-        </span>
-      </div>
-
-      {/* Active stream pills */}
-      {isUp && streaming.active_streams?.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {streaming.active_streams.map(s => (
-            <span key={s} className="px-2 py-0.5 rounded text-xs bg-emerald-900/40 text-emerald-300 border border-emerald-700/30 font-mono">
-              {s}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Refresh button */}
-      <button
-        onClick={fetchStatus}
-        disabled={refreshing}
-        className="ml-auto p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
-        title="Refresh pipeline status"
-      >
-        <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-      </button>
+    <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg border text-sm
+      bg-amber-500/10 border-amber-500/30 text-amber-400 w-fit">
+      <SettingsIcon size={14} />
+      HLS URL not configured — go to <strong className="ml-1">Settings</strong> to set the ngrok URL
     </div>
   );
 };
 
 // ─── Camera Card ──────────────────────────────────────────────────────────────
-const CameraCard = ({ camera, onFocus, isLive }) => {
+const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
+  const [streamStatus, setStreamStatus] = useState('loading');
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -96,7 +48,11 @@ const CameraCard = ({ camera, onFocus, isLive }) => {
     return () => clearInterval(timer);
   }, []);
 
-  const effectiveStatus = !isLive ? 'OFFLINE' : camera.status;
+  const effectiveStatus = !hlsUrl
+    ? 'OFFLINE'
+    : alertStatus || camera.status;
+
+  const isLive = streamStatus === 'playing';
 
   return (
     <div className={`bg-slate-900/50 rounded-xl overflow-hidden shadow-lg border transition-all duration-300 group
@@ -104,36 +60,27 @@ const CameraCard = ({ camera, onFocus, isLive }) => {
         ? 'border-red-500/60 shadow-red-900/20'
         : 'border-slate-800 hover:border-emerald-500/50'}`}>
       <div className="relative aspect-video">
-        {/* Live indicator dot */}
-        {isLive && effectiveStatus !== 'OFFLINE' && (
+        {isLive && (
           <div className="absolute top-2 left-2 z-10 flex items-center gap-1 px-1.5 py-0.5 bg-black/70 rounded text-xs font-bold text-red-400">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
             LIVE
           </div>
         )}
 
-        {effectiveStatus !== 'OFFLINE' ? (
-          <WebRTCPlayer streamPath={camera.streamPath} />
-        ) : (
-          <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center gap-2">
-            <VideoOff size={24} className="text-slate-600" />
-            <p className="text-slate-600 text-xs">
-              {isLive ? 'Stream not published' : 'Pipeline offline'}
-            </p>
-          </div>
-        )}
+        <HLSPlayer
+          streamPath={camera.streamPath}
+          hlsBaseUrl={hlsUrl}
+          isMuted
+          onStatusChange={setStreamStatus}
+        />
 
-        {/* Expand button */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          <button
-            onClick={() => onFocus(camera)}
-            className="p-1.5 bg-slate-900/70 rounded-full text-white hover:bg-emerald-600 transition-colors"
-          >
-            <Maximize size={14} />
-          </button>
-        </div>
+        <button
+          onClick={() => onFocus(camera)}
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 p-1.5 bg-slate-900/70 rounded-full text-white hover:bg-emerald-600"
+        >
+          <Maximize size={14} />
+        </button>
 
-        {/* Overlay gradient */}
         <div className="absolute bottom-0 left-0 w-full p-2 bg-gradient-to-t from-black/70 to-transparent pointer-events-none">
           <p className="text-white font-semibold text-sm drop-shadow-md leading-tight">{camera.specificLocation}</p>
           <p className="text-slate-300 text-xs drop-shadow-md">{camera.ward}</p>
@@ -154,8 +101,8 @@ const CameraCard = ({ camera, onFocus, isLive }) => {
 };
 
 // ─── Focus Modal ─────────────────────────────────────────────────────────────
-const FocusModal = ({ camera, onClose, isLive }) => {
-  const effectiveStatus = !isLive ? 'OFFLINE' : camera.status;
+const FocusModal = ({ camera, onClose, hlsUrl, alertStatus }) => {
+  const effectiveStatus = !hlsUrl ? 'OFFLINE' : alertStatus || camera.status;
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -176,19 +123,15 @@ const FocusModal = ({ camera, onClose, isLive }) => {
         </div>
 
         <div className="aspect-video bg-black">
-          {effectiveStatus !== 'OFFLINE' ? (
-            <WebRTCPlayer streamPath={camera.streamPath} isMuted={false} />
-          ) : (
-            <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center gap-3">
-              <VideoOff size={40} className="text-slate-700" />
-              <p className="text-slate-500">Camera offline or pipeline not running</p>
-              <p className="text-slate-600 text-sm font-mono">rtsp://mediamtx:8554/{camera.streamPath}</p>
-            </div>
-          )}
+          <HLSPlayer
+            streamPath={camera.streamPath}
+            hlsBaseUrl={hlsUrl}
+            isMuted={false}
+          />
         </div>
 
         <div className="px-4 py-3 bg-slate-900/50 flex justify-between items-center text-sm text-slate-400">
-          <span className="font-mono">{camera.id} · WebRTC WHEP</span>
+          <span className="font-mono">{camera.id} · HLS</span>
           <span>{new Date().toLocaleString('vi-VN')}</span>
         </div>
       </div>
@@ -198,54 +141,38 @@ const FocusModal = ({ camera, onClose, isLive }) => {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const LiveStreams = () => {
-  const [cameras, setCameras]           = useState(MOCK_CAMERAS);
-  const [focusedCamera, setFocusedCamera] = useState(null);
-  const [liveStreams, setLiveStreams]    = useState(new Set());  // set of active streamPaths
+  const [cameras, setCameras]       = useState(MOCK_CAMERAS);
+  const [focusedCamera, setFocus]   = useState(null);
+  const [hlsUrl, setHlsUrl]         = useState(() => localStorage.getItem(LS_KEY) || '');
+  const [alertMap, setAlertMap]     = useState({});  // cam_id → status
 
-  // Poll camera violence status from Kafka
+  // Sync HLS URL from localStorage when Settings saves it
   useEffect(() => {
-    const fetchCameraStatus = () => {
+    const handler = () => setHlsUrl(localStorage.getItem(LS_KEY) || '');
+    window.addEventListener('hls-url-changed', handler);
+    return () => window.removeEventListener('hls-url-changed', handler);
+  }, []);
+
+  // Poll camera violence status from chatbot API
+  useEffect(() => {
+    const fetch_ = () => {
       fetch(`${API}/api/camera-status`)
-        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-        .then(({ cameras: statusMap }) => {
-          if (!statusMap || typeof statusMap !== 'object') return;
-          setCameras(prev =>
-            prev.map(cam => {
-              const realStatus = statusMap[cam.id];
-              if (!realStatus) return cam;
-              return { ...cam, status: realStatus };
-            })
-          );
+        .then(r => { if (!r.ok) throw 0; return r.json(); })
+        .then(({ cameras: map }) => {
+          if (map && typeof map === 'object') setAlertMap(map);
         })
         .catch(() => {});
     };
-
-    fetchCameraStatus();
-    const id = setInterval(fetchCameraStatus, 5000);
+    fetch_();
+    const id = setInterval(fetch_, 5000);
     return () => clearInterval(id);
   }, []);
 
-  // Poll which streams are live from MediaMTX
-  useEffect(() => {
-    const fetchLiveStreams = () => {
-      fetch(`${API}/api/streaming-status`)
-        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-        .then(d => setLiveStreams(new Set(d.active_streams || [])))
-        .catch(() => {});
-    };
-
-    fetchLiveStreams();
-    const id = setInterval(fetchLiveStreams, 8000);
-    return () => clearInterval(id);
-  }, []);
-
-  // Summary stats
-  const alertCount  = cameras.filter(c => c.status === 'VIOLENCE_DETECTED' && liveStreams.has(c.streamPath)).length;
-  const onlineCount = cameras.filter(c => liveStreams.has(c.streamPath)).length;
+  const alertCount  = cameras.filter(c => alertMap[c.id] === 'VIOLENCE_DETECTED').length;
+  const onlineCount = hlsUrl ? cameras.length : 0;
 
   return (
     <div>
-      {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
@@ -253,7 +180,7 @@ const LiveStreams = () => {
             Live Surveillance
           </h1>
           <p className="text-slate-500 text-sm mt-0.5">
-            {onlineCount}/{cameras.length} cameras online
+            {onlineCount}/{cameras.length} cameras configured
             {alertCount > 0 && (
               <span className="ml-2 text-red-400 font-medium animate-pulse">
                 · {alertCount} alert{alertCount > 1 ? 's' : ''} active
@@ -262,7 +189,6 @@ const LiveStreams = () => {
           </p>
         </div>
 
-        {/* Quick summary badges */}
         <div className="flex items-center gap-2">
           {alertCount > 0 && (
             <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-sm font-medium">
@@ -270,34 +196,35 @@ const LiveStreams = () => {
               {alertCount} Alert{alertCount > 1 ? 's' : ''}
             </span>
           )}
-          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-sm">
-            <CheckCircle2 size={14} />
-            {onlineCount} Online
-          </span>
+          {hlsUrl && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-sm">
+              <CheckCircle2 size={14} />
+              HLS Active
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Pipeline status banner */}
-      <PipelineBanner />
+      <HlsBanner hlsUrl={hlsUrl} />
 
-      {/* Camera grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {cameras.map((camera) => (
           <CameraCard
             key={camera.id}
             camera={camera}
-            onFocus={setFocusedCamera}
-            isLive={liveStreams.has(camera.streamPath)}
+            onFocus={setFocus}
+            hlsUrl={hlsUrl}
+            alertStatus={alertMap[camera.id]}
           />
         ))}
       </div>
 
-      {/* Focus modal */}
       {focusedCamera && (
         <FocusModal
           camera={focusedCamera}
-          onClose={() => setFocusedCamera(null)}
-          isLive={liveStreams.has(focusedCamera.streamPath)}
+          onClose={() => setFocus(null)}
+          hlsUrl={hlsUrl}
+          alertStatus={alertMap[focusedCamera.id]}
         />
       )}
     </div>

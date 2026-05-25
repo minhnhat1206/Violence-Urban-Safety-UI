@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MOCK_CAMERAS } from '../../constants';
-import { Trash2, Edit } from 'lucide-react';
+import { Trash2, Edit, Video, Save, X } from 'lucide-react';
+
+const LS_KEY = 'hls_base_url';
 
 const getStatusBadgeColor = (status) => {
   switch (status) {
@@ -15,9 +17,78 @@ const getStatusBadgeColor = (status) => {
   }
 };
 
+const HLSUrlSection = () => {
+  const [saved, setSaved]   = useState(() => localStorage.getItem(LS_KEY) || '');
+  const [draft, setDraft]   = useState(saved);
+  const [status, setStatus] = useState('idle'); // 'idle' | 'saved'
+
+  const handleSave = () => {
+    const trimmed = draft.trim();
+    localStorage.setItem(LS_KEY, trimmed);
+    setSaved(trimmed);
+    setStatus('saved');
+    setTimeout(() => setStatus('idle'), 2000);
+    window.dispatchEvent(new Event('hls-url-changed'));
+  };
+
+  const handleClear = () => {
+    localStorage.removeItem(LS_KEY);
+    setSaved('');
+    setDraft('');
+    window.dispatchEvent(new Event('hls-url-changed'));
+  };
+
+  return (
+    <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800">
+      <div className="flex items-center gap-2 mb-1">
+        <Video size={18} className="text-emerald-400" />
+        <h3 className="text-xl font-semibold text-white">Live Stream Configuration</h3>
+      </div>
+      <p className="text-slate-500 text-sm mb-4">
+        Paste the ngrok HTTPS URL exposing local MediaMTX port 8888.
+        Streams will be loaded as <span className="font-mono text-slate-400">&lt;url&gt;/cam_XX/index.m3u8</span>.
+      </p>
+
+      <div className="flex gap-2">
+        <input
+          type="url"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          placeholder="https://xxxx.ngrok-free.app"
+          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-white placeholder-slate-500"
+        />
+        <button
+          onClick={handleSave}
+          className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white text-sm font-medium transition-colors"
+        >
+          <Save size={14} />
+          {status === 'saved' ? 'Saved!' : 'Save'}
+        </button>
+        {saved && (
+          <button
+            onClick={handleClear}
+            className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors"
+            title="Clear URL"
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
+      {saved && (
+        <p className="mt-2 text-xs text-emerald-400 font-mono truncate">
+          Active: {saved}
+        </p>
+      )}
+    </div>
+  );
+};
+
 const Settings = () => {
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
+      <HLSUrlSection />
+
       <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800">
         <h3 className="text-xl font-semibold text-white mb-4">Alert Thresholds</h3>
 
