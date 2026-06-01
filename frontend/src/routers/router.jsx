@@ -10,6 +10,7 @@ import Analytics from "../pages/Analytics";
 import Chatbot from "../pages/Chatbot";
 import Settings from "../pages/Settings";
 import StreamhouseStatus from "../pages/StreamhouseStatus";
+import GrafanaDashboard from "../pages/GrafanaDashboard";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -17,11 +18,11 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <LiveStreams />
+        element: <Home />
       },
       {
         path: "/home",
-        element: <LiveStreams />
+        element: <Home />
       },
       {
         path: "/livestreams",
@@ -42,6 +43,10 @@ const router = createBrowserRouter([
       {
         path: "/chatbot",
         element: <Chatbot />
+      },
+      {
+        path: "/grafana",
+        element: <GrafanaDashboard />
       },
       {
         path: "/settings",

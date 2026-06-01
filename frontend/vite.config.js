@@ -44,7 +44,8 @@ export default defineConfig({
         target: 'http://34.158.32.82:5002',
         changeOrigin: true,
       },
-      '/chat': {
+      // Exact match /chat (not /chatbot) — use regex key
+      '^/chat$': {
         target: 'http://34.158.32.82:5002',
         changeOrigin: true,
       },
@@ -53,5 +54,6 @@ export default defineConfig({
   define: {
     'import.meta.env.VITE_FLINK_URL': JSON.stringify('http://34.158.32.82:8081'),
     'import.meta.env.VITE_ADMIN_API_BASE_URL': JSON.stringify('http://34.158.32.82:5003'),
+    'import.meta.env.VITE_GRAFANA_URL': JSON.stringify('http://34.158.32.82:3001'),
   },
 })

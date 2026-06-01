@@ -1,14 +1,15 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Shield, Radio, Bell, BarChart2, MessageSquare, Settings, Server } from 'lucide-react';
+import { Shield, Radio, Bell, BarChart2, MessageSquare, Settings, Server, LineChart } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { name: 'Live Streams', path: '/livestreams',   icon: Radio },
-  { name: 'Alerts',       path: '/alertsdashboard',icon: Bell },
-  { name: 'Analytics',    path: '/analytics',      icon: BarChart2 },
-  { name: 'Status',       path: '/status',         icon: Server },
-  { name: 'Assistant',    path: '/chatbot',         icon: MessageSquare },
-  { name: 'Settings',     path: '/settings',        icon: Settings },
+  { name: 'Live Streams', path: '/livestreams',    icon: Radio },
+  { name: 'Alerts',       path: '/alertsdashboard', icon: Bell },
+  { name: 'Analytics',    path: '/analytics',       icon: BarChart2 },
+  { name: 'Grafana',      path: '/grafana',          icon: LineChart },
+  { name: 'Status',       path: '/status',           icon: Server },
+  { name: 'Assistant',    path: '/chatbot',          icon: MessageSquare },
+  { name: 'Settings',     path: '/settings',         icon: Settings },
 ];
 const Sidebar = () => {
   return (
