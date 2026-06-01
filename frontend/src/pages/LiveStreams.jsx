@@ -6,8 +6,9 @@ import {
 } from 'lucide-react';
 import HLSPlayer from '../common/HLSPlayer';
 
-const LS_KEY = 'hls_base_url';
-const API    = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002';
+const LS_KEY    = 'hls_base_url';
+const API       = import.meta.env.VITE_API_BASE_URL  || '';
+const ADMIN_API = import.meta.env.VITE_ADMIN_API_BASE_URL || 'http://localhost:5003';
 
 const statusStyle = (status) => {
   switch (status) {
@@ -141,16 +142,33 @@ const FocusModal = ({ camera, onClose, hlsUrl, alertStatus }) => {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const LiveStreams = () => {
-  const [cameras, setCameras]       = useState(MOCK_CAMERAS);
-  const [focusedCamera, setFocus]   = useState(null);
-  const [hlsUrl, setHlsUrl]         = useState(() => localStorage.getItem(LS_KEY) || '');
-  const [alertMap, setAlertMap]     = useState({});  // cam_id → status
+  const [cameras, setCameras]         = useState(MOCK_CAMERAS);
+  const [activeCamIds, setActiveCamIds] = useState(null); // null = loading, Set when loaded
+  const [focusedCamera, setFocus]     = useState(null);
+  const [hlsUrl, setHlsUrl]           = useState(() => localStorage.getItem(LS_KEY) || '');
+  const [alertMap, setAlertMap]       = useState({});  // cam_id → status
 
   // Sync HLS URL from localStorage when Settings saves it
   useEffect(() => {
     const handler = () => setHlsUrl(localStorage.getItem(LS_KEY) || '');
     window.addEventListener('hls-url-changed', handler);
     return () => window.removeEventListener('hls-url-changed', handler);
+  }, []);
+
+  // Fetch active camera list from Admin API on mount and when pipeline changes
+  useEffect(() => {
+    const fetchActive = () => {
+      fetch(`${ADMIN_API}/api/cameras`)
+        .then(r => { if (!r.ok) throw 0; return r.json(); })
+        .then(({ cameras: list }) => {
+          const active = new Set(list.filter(c => c.active).map(c => c.camera_id));
+          setActiveCamIds(active);
+        })
+        .catch(() => setActiveCamIds(null)); // fallback: show all
+    };
+    fetchActive();
+    window.addEventListener('pipeline-cameras-changed', fetchActive);
+    return () => window.removeEventListener('pipeline-cameras-changed', fetchActive);
   }, []);
 
   // Poll camera violence status from chatbot API
@@ -168,8 +186,15 @@ const LiveStreams = () => {
     return () => clearInterval(id);
   }, []);
 
-  const alertCount  = cameras.filter(c => alertMap[c.id] === 'VIOLENCE_DETECTED').length;
-  const onlineCount = hlsUrl ? cameras.length : 0;
+  // Only show cameras that are active (or all if admin API unavailable)
+  const visibleCameras = activeCamIds
+    ? cameras.filter(c => activeCamIds.has(c.id))
+    : cameras;
+
+  const alertCount  = visibleCameras.filter(c => alertMap[c.id] === 'VIOLENCE_DETECTED').length;
+  const onlineCount = hlsUrl ? visibleCameras.length : 0;
+  const totalCount  = cameras.length;
+  const activeCount = activeCamIds ? activeCamIds.size : totalCount;
 
   return (
     <div>
@@ -180,7 +205,10 @@ const LiveStreams = () => {
             Live Surveillance
           </h1>
           <p className="text-slate-500 text-sm mt-0.5">
-            {onlineCount}/{cameras.length} cameras configured
+            {activeCount}/{totalCount} cameras active
+            {onlineCount > 0 && activeCount !== onlineCount && (
+              <span className="ml-1 text-slate-600">· {onlineCount} streaming</span>
+            )}
             {alertCount > 0 && (
               <span className="ml-2 text-red-400 font-medium animate-pulse">
                 · {alertCount} alert{alertCount > 1 ? 's' : ''} active
@@ -208,7 +236,7 @@ const LiveStreams = () => {
       <HlsBanner hlsUrl={hlsUrl} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {cameras.map((camera) => (
+        {visibleCameras.map((camera) => (
           <CameraCard
             key={camera.id}
             camera={camera}

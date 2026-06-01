@@ -28,6 +28,8 @@ const usePollApi = (url, fallback, intervalMs = 15000) => {
 };
 
 // ── Flink jobs via REST ───────────────────────────────────────────────────
+const FLINK_URL = import.meta.env.VITE_FLINK_URL || 'http://localhost:8081';
+
 const useFlinkJobs = () => {
   const [jobs, setJobs]     = useState([]);
   const [overview, setOverview] = useState(null);
@@ -36,8 +38,8 @@ const useFlinkJobs = () => {
   const fetchJobs = useCallback(async () => {
     try {
       const [ovRes, jobsRes] = await Promise.all([
-        fetch('http://localhost:8081/overview'),
-        fetch('http://localhost:8081/jobs'),
+        fetch(`${FLINK_URL}/overview`),
+        fetch(`${FLINK_URL}/jobs`),
       ]);
       if (!ovRes.ok || !jobsRes.ok) throw new Error('HTTP error');
       const [ov, jd] = await Promise.all([ovRes.json(), jobsRes.json()]);
@@ -47,7 +49,7 @@ const useFlinkJobs = () => {
       const enriched = await Promise.all(
         running.map(async j => {
           try {
-            const r = await fetch(`http://localhost:8081/jobs/${j.id}`);
+            const r = await fetch(`${FLINK_URL}/jobs/${j.id}`);
             const d = await r.json();
             return { ...j, name: d.name || j.id, vertices: d.vertices || [] };
           } catch { return j; }
@@ -286,7 +288,7 @@ const StreamhouseStatus = () => {
             Flink Jobs
           </h2>
           <a
-            href="http://localhost:8081"
+            href={FLINK_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300"
@@ -381,7 +383,7 @@ const StreamhouseStatus = () => {
       {/* ── Quick Links ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {[
-          { href: 'http://localhost:8081',  label: 'Flink Web UI',    icon: Zap,       color: 'text-amber-400'   },
+          { href: FLINK_URL,  label: 'Flink Web UI',    icon: Zap,       color: 'text-amber-400'   },
           { href: 'http://localhost:9001',  label: 'MinIO Console',   icon: Database,  color: 'text-blue-400'    },
           { href: 'http://localhost:3001',  label: 'Grafana',         icon: BarChart2, color: 'text-orange-400'  },
           { href: 'http://localhost:9090',  label: 'Prometheus',      icon: Activity,  color: 'text-red-400'     },

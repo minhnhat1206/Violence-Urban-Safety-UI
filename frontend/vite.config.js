@@ -7,39 +7,51 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/chat': {
-        target: 'http://localhost:5002',
+        target: 'http://34.158.32.82:5002',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/chat/, '/chat'),
       },
       // Other REST endpoints on the chatbot service
       '/api/recent-incidents': {
-        target: 'http://localhost:5002',
+        target: 'http://34.158.32.82:5002',
         changeOrigin: true,
       },
       '/api/stats': {
-        target: 'http://localhost:5002',
+        target: 'http://34.158.32.82:5002',
         changeOrigin: true,
       },
       '/api/evidence': {
-        target: 'http://localhost:5002',
+        target: 'http://34.158.32.82:5002',
         changeOrigin: true,
       },
       '/api/camera-status': {
-        target: 'http://localhost:5002',
+        target: 'http://34.158.32.82:5002',
         changeOrigin: true,
       },
       '/api/layer-counts': {
-        target: 'http://localhost:5002',
+        target: 'http://34.158.32.82:5002',
         changeOrigin: true,
       },
       '/api/latency': {
-        target: 'http://localhost:5002',
+        target: 'http://34.158.32.82:5002',
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://localhost:5002',
+        target: 'http://34.158.32.82:5002',
+        changeOrigin: true,
+      },
+      '/api/union-read': {
+        target: 'http://34.158.32.82:5002',
+        changeOrigin: true,
+      },
+      '/chat': {
+        target: 'http://34.158.32.82:5002',
         changeOrigin: true,
       },
     },
+  },
+  define: {
+    'import.meta.env.VITE_FLINK_URL': JSON.stringify('http://34.158.32.82:8081'),
+    'import.meta.env.VITE_ADMIN_API_BASE_URL': JSON.stringify('http://34.158.32.82:5003'),
   },
 })
