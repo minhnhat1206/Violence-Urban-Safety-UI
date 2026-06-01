@@ -14,12 +14,20 @@
 
 // })
 
-import { configureStore } from '@reduxjs/toolkit'
+import { configureStore, createSlice } from '@reduxjs/toolkit'
+
+const appSlice = createSlice({
+  name: 'app',
+  initialState: {},
+  reducers: {},
+})
 
 export const store = configureStore({
-  reducer: {},
+  reducer: {
+    app: appSlice.reducer,
+  },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, 
+      serializableCheck: false,
     }),
 })
