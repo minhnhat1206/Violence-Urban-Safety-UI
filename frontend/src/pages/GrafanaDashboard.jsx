@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart2, Activity, Shield, Zap, Server, TrendingUp, ExternalLink, RefreshCw } from 'lucide-react';
 
-const GRAFANA_BASE = import.meta.env.VITE_GRAFANA_URL || 'http://34.21.241.79:3001';
+const GRAFANA_BASE = import.meta.env.VITE_GRAFANA_URL || 'http://34.124.131.144:3001';
 
 const DASHBOARDS = [
   {
@@ -172,7 +172,7 @@ const GrafanaDashboard = () => {
                className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800 transition-colors">
               <ExternalLink size={12} /> Grafana Home
             </a>
-            <a href={`http://34.21.241.79:9090`} target="_blank" rel="noopener noreferrer"
+            <a href={`http://34.124.131.144:9090`} target="_blank" rel="noopener noreferrer"
                className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800 transition-colors">
               <Activity size={12} /> Prometheus
             </a>
