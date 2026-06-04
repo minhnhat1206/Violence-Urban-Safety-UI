@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, Shield, Zap, Server, TrendingUp, ExternalLink, RefreshCw } from 'lucide-react';
+import { BarChart2, Activity, Shield, Zap, Server, TrendingUp, ExternalLink, RefreshCw } from 'lucide-react';
 
 const GRAFANA_BASE = import.meta.env.VITE_GRAFANA_URL || 'http://34.124.131.144:3001';
 
