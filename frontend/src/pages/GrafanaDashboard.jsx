@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart2, Activity, Shield, Zap, Server, TrendingUp, ExternalLink, RefreshCw } from 'lucide-react';
+import { Activity, Shield, Zap, Server, TrendingUp, ExternalLink, RefreshCw } from 'lucide-react';
 
 const GRAFANA_BASE = import.meta.env.VITE_GRAFANA_URL || 'http://34.124.131.144:3001';
 
@@ -48,15 +48,6 @@ const DASHBOARDS = [
     color: 'text-blue-400',
     border: 'border-blue-500/30',
     bg: 'bg-blue-500/10',
-  },
-  {
-    uid: 'spark-pipeline-monitor',
-    title: 'Pipeline Monitor (Spark)',
-    description: 'Spark streaming metrics',
-    icon: BarChart2,
-    color: 'text-purple-400',
-    border: 'border-purple-500/30',
-    bg: 'bg-purple-500/10',
   },
 ];
 
