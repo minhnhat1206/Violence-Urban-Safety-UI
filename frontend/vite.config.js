@@ -20,7 +20,7 @@ export default defineConfig({
         target: 'http://34.124.131.144:5002',
         changeOrigin: true,
       },
-      '/api/grafana/stats': {
+      '/api/grafana': {
         target: 'http://34.124.131.144:5002',
         changeOrigin: true,
       },
