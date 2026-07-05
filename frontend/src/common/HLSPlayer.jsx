@@ -2,15 +2,28 @@ import React, { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { Loader2, VideoOff, Settings } from 'lucide-react';
 
+const BBOX_CAMERAS = ['cam_06'];
+
 const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, onStatusChange }) => {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const [status, setStatus] = useState('loading'); // 'loading' | 'playing' | 'error' | 'no-url'
+  
+  // Track current playing path and whether we are trying bbox stream
+  const [currentPath, setCurrentPath] = useState(streamPath);
+  const [tryBbox, setTryBbox] = useState(BBOX_CAMERAS.includes(streamPath));
 
   const updateStatus = (s) => {
     setStatus(s);
     onStatusChange?.(s);
   };
+
+  // Reset states when base streamPath changes
+  useEffect(() => {
+    const isBbox = BBOX_CAMERAS.includes(streamPath);
+    setCurrentPath(isBbox ? `${streamPath}_bbox` : streamPath);
+    setTryBbox(isBbox);
+  }, [streamPath]);
 
   useEffect(() => {
     if (!hlsBaseUrl) {
@@ -18,12 +31,12 @@ const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, onStatusChange }) =
       return;
     }
 
-    if (!streamPath) {
+    if (!currentPath) {
       updateStatus('error');
       return;
     }
 
-    const src = `${hlsBaseUrl.replace(/\/$/, '')}/${streamPath}/index.m3u8`;
+    const src = `${hlsBaseUrl.replace(/\/$/, '')}/${currentPath}/index.m3u8`;
     const video = videoRef.current;
     if (!video) return;
 
@@ -35,6 +48,8 @@ const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, onStatusChange }) =
         liveDurationInfinity: true,
         maxBufferLength: 5,
         maxMaxBufferLength: 10,
+        manifestLoadingTimeOut: 3000,
+        manifestLoadingMaxRetry: 1,
       });
       hlsRef.current = hls;
 
@@ -46,7 +61,15 @@ const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, onStatusChange }) =
       });
 
       hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) updateStatus('error');
+        if (data.fatal) {
+          if (tryBbox) {
+            console.warn(`[HLSPlayer] Failed to load bbox stream at ${currentPath}, falling back to raw ${streamPath}`);
+            setTryBbox(false);
+            setCurrentPath(streamPath);
+          } else {
+            updateStatus('error');
+          }
+        }
       });
 
       video.onplaying = () => updateStatus('playing');
@@ -59,7 +82,15 @@ const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, onStatusChange }) =
       // Safari native HLS
       video.src = src;
       video.onplaying = () => updateStatus('playing');
-      video.onerror = () => updateStatus('error');
+      video.onerror = () => {
+        if (tryBbox) {
+          console.warn(`[HLSPlayer Safari] Failed to load bbox stream at ${currentPath}, falling back to raw ${streamPath}`);
+          setTryBbox(false);
+          setCurrentPath(streamPath);
+        } else {
+          updateStatus('error');
+        }
+      };
       video.play().catch(() => {});
       return () => {
         video.src = '';
@@ -67,7 +98,7 @@ const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, onStatusChange }) =
     } else {
       updateStatus('error');
     }
-  }, [streamPath, hlsBaseUrl]);
+  }, [currentPath, hlsBaseUrl]);
 
   if (status === 'no-url') {
     return (
