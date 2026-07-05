@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MOCK_CAMERAS } from '../../constants';
+import { CAMERA_REGISTRY } from '../../constants';
 import {
   X, Maximize, AlertTriangle, CheckCircle2,
   Video, VideoOff, Settings as SettingsIcon,
@@ -7,6 +7,9 @@ import {
 import HLSPlayer from '../common/HLSPlayer';
 
 const LS_KEY    = 'hls_base_url';
+// MediaMTX HLS. Host :8888 is taken by VS Code on datalab → remapped to :18888.
+// Tailscale IP works both from datalab itself and remote Tailscale machines.
+const DEFAULT_HLS = '';   // HLS paths = /cam_XX/index.m3u8 → vite proxy ^/cam_\d+ → mediamtx :8888
 const API       = import.meta.env.VITE_API_BASE_URL  || '';
 const ADMIN_API = import.meta.env.VITE_ADMIN_API_BASE_URL || 'http://localhost:5003';
 
@@ -21,7 +24,7 @@ const statusStyle = (status) => {
 
 // ─── HLS URL Banner ────────────────────────────────────────────────────────────
 const HlsBanner = ({ hlsUrl }) => {
-  if (hlsUrl) {
+  if (hlsUrl || hlsUrl === "") {
     return (
       <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg border text-sm
         bg-emerald-500/10 border-emerald-500/30 text-emerald-400 w-fit">
@@ -43,17 +46,37 @@ const HlsBanner = ({ hlsUrl }) => {
 const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
   const [streamStatus, setStreamStatus] = useState('loading');
   const [time, setTime] = useState(new Date());
+  const [camData, setCamData] = useState(null); // real-time from VioMoViNet
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const effectiveStatus = !hlsUrl
+  // Poll VioMoViNet directly for real-time score + violence status (every 3s)
+  useEffect(() => {
+    const fetchData = () => {
+      fetch(`/vio/api/stream/status/${camera.id}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setCamData(d); })
+        .catch(() => {});
+    };
+    fetchData();
+    const id = setInterval(fetchData, 3000);
+    return () => clearInterval(id);
+  }, [camera.id]);
+
+  const score = camData?.score ?? 0;
+  const scorePct = Math.round(score * 100);
+  const isViolent = camData?.is_violent ?? false;
+  const fps = camData?.fps ?? 0;
+
+  const effectiveStatus = (hlsUrl === null || hlsUrl === undefined)
     ? 'OFFLINE'
-    : alertStatus || camera.status;
+    : isViolent ? 'VIOLENCE_DETECTED' : 'NORMAL';
 
   const isLive = streamStatus === 'playing';
+  const scoreColor = score >= 0.7 ? 'bg-red-500' : score >= 0.4 ? 'bg-yellow-500' : 'bg-emerald-500';
 
   return (
     <div className={`bg-slate-900/50 rounded-xl overflow-hidden shadow-lg border transition-all duration-300 group
@@ -88,14 +111,29 @@ const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
         </div>
       </div>
 
-      <div className="px-3 py-2 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${statusStyle(effectiveStatus)}`}>
-            {effectiveStatus === 'VIOLENCE_DETECTED' ? '⚠ ALERT' : effectiveStatus}
-          </span>
-          <span className="text-xs text-slate-600 font-mono">{camera.id}</span>
+      <div className="px-3 py-2 space-y-1.5">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${statusStyle(effectiveStatus)}`}>
+              {effectiveStatus === 'VIOLENCE_DETECTED' ? '⚠ ALERT' : effectiveStatus}
+            </span>
+            <span className="text-xs text-slate-600 font-mono">{camera.id}</span>
+          </div>
+          <span className="text-xs text-slate-500 font-mono">{time.toLocaleTimeString()}</span>
         </div>
-        <span className="text-xs text-slate-500 font-mono">{time.toLocaleTimeString()}</span>
+        {/* Real-time violence score bar */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className={`h-full ${scoreColor} rounded-full transition-all duration-500`}
+              style={{ width: `${scorePct}%` }}
+            />
+          </div>
+          <span className={`text-xs font-mono font-bold ${isViolent ? 'text-red-400' : 'text-slate-400'}`}>
+            {scorePct}%
+          </span>
+          {fps > 0 && <span className="text-xs text-slate-600">{fps.toFixed(0)}fps</span>}
+        </div>
       </div>
     </div>
   );
@@ -103,7 +141,7 @@ const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
 
 // ─── Focus Modal ─────────────────────────────────────────────────────────────
 const FocusModal = ({ camera, onClose, hlsUrl, alertStatus }) => {
-  const effectiveStatus = !hlsUrl ? 'OFFLINE' : alertStatus || camera.status;
+  const effectiveStatus = (hlsUrl === null || hlsUrl === undefined) ? "OFFLINE" : alertStatus || camera.status;
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -142,33 +180,34 @@ const FocusModal = ({ camera, onClose, hlsUrl, alertStatus }) => {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const LiveStreams = () => {
-  const [cameras, setCameras]         = useState(MOCK_CAMERAS);
+  const [cameras, setCameras]         = useState(CAMERA_REGISTRY);
   const [activeCamIds, setActiveCamIds] = useState(null); // null = loading, Set when loaded
   const [focusedCamera, setFocus]     = useState(null);
-  const [hlsUrl, setHlsUrl]           = useState(() => localStorage.getItem(LS_KEY) || '');
+  const [hlsUrl, setHlsUrl]           = useState(() => localStorage.getItem(LS_KEY) || DEFAULT_HLS);
   const [alertMap, setAlertMap]       = useState({});  // cam_id → status
 
   // Sync HLS URL from localStorage when Settings saves it
   useEffect(() => {
-    const handler = () => setHlsUrl(localStorage.getItem(LS_KEY) || '');
+    const handler = () => setHlsUrl(localStorage.getItem(LS_KEY) || DEFAULT_HLS);
     window.addEventListener('hls-url-changed', handler);
     return () => window.removeEventListener('hls-url-changed', handler);
   }, []);
 
-  // Fetch active camera list from Admin API on mount and when pipeline changes
+  // Fetch active cameras from VioMoViNet inference server (REAL active streams)
   useEffect(() => {
     const fetchActive = () => {
-      fetch(`${ADMIN_API}/api/cameras`)
+      fetch('/vio/api/stream/active')
         .then(r => { if (!r.ok) throw 0; return r.json(); })
-        .then(({ cameras: list }) => {
-          const active = new Set(list.filter(c => c.active).map(c => c.camera_id));
-          setActiveCamIds(active);
+        .then((data) => {
+          const streams = data.streams || [];
+          const active = new Set(streams.map(s => s.camera_id));
+          setActiveCamIds(active.size > 0 ? active : null);
         })
         .catch(() => setActiveCamIds(null)); // fallback: show all
     };
     fetchActive();
-    window.addEventListener('pipeline-cameras-changed', fetchActive);
-    return () => window.removeEventListener('pipeline-cameras-changed', fetchActive);
+    const id = setInterval(fetchActive, 10000); // refresh mỗi 10s
+    return () => clearInterval(id);
   }, []);
 
   // Poll camera violence status from chatbot API
@@ -192,7 +231,7 @@ const LiveStreams = () => {
     : cameras;
 
   const alertCount  = visibleCameras.filter(c => alertMap[c.id] === 'VIOLENCE_DETECTED').length;
-  const onlineCount = hlsUrl ? visibleCameras.length : 0;
+  const onlineCount = (hlsUrl || hlsUrl === "") ? visibleCameras.length : 0;
   const totalCount  = cameras.length;
   const activeCount = activeCamIds ? activeCamIds.size : totalCount;
 

@@ -8,23 +8,13 @@ export const NAV_ITEMS = [
   { name: 'Settings', icon: SettingsIcon },
 ];
 
-// Real cameras from camera_registry.csv — matches MediaMTX stream paths & Kafka cam_id
-export const MOCK_CAMERAS = [
+// Real camera registry from camera_registry.csv — HCM District 1, matches sim + Kafka cam_id
+export const CAMERA_REGISTRY = [
   { id: 'cam_01', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Bến Nghé',         specificLocation: 'Đường Nguyễn Huệ',          status: 'NORMAL', streamPath: 'cam_01' },
   { id: 'cam_02', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Nguyễn Thái Bình', specificLocation: 'Đường Lê Lợi',              status: 'NORMAL', streamPath: 'cam_02' },
   { id: 'cam_03', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Bến Thành',        specificLocation: 'Đường Nguyễn Thái Học',     status: 'NORMAL', streamPath: 'cam_03' },
   { id: 'cam_04', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Cầu Ông Lãnh',    specificLocation: 'Đường Lê Thánh Tôn',        status: 'NORMAL', streamPath: 'cam_04' },
   { id: 'cam_05', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Phạm Ngũ Lão',    specificLocation: 'Đường Pasteur',             status: 'NORMAL', streamPath: 'cam_05' },
-  { id: 'cam_06', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Tân Định',         specificLocation: 'Đường Trần Hưng Đạo',       status: 'NORMAL', streamPath: 'cam_06' },
-  { id: 'cam_07', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Đa Kao',           specificLocation: 'Đường Đồng Khởi',           status: 'NORMAL', streamPath: 'cam_07' },
-  { id: 'cam_08', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Bến Thành (2)',   specificLocation: 'Đường Hai Bà Trưng',        status: 'NORMAL', streamPath: 'cam_08' },
-  { id: 'cam_09', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Nguyễn Cư Trinh', specificLocation: 'Đường Nguyễn Du',           status: 'NORMAL', streamPath: 'cam_09' },
-  { id: 'cam_10', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Cầu Kho',         specificLocation: 'Đường Võ Văn Kiệt',         status: 'NORMAL', streamPath: 'cam_10' },
-  { id: 'cam_11', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Tân Định (2)',    specificLocation: 'Đường Nguyễn Công Trứ',     status: 'NORMAL', streamPath: 'cam_11' },
-  { id: 'cam_12', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Nguyễn Thái Bình (2)', specificLocation: 'Công Trường Mê Linh', status: 'NORMAL', streamPath: 'cam_12' },
-  { id: 'cam_13', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Phạm Ngũ Lão (2)',specificLocation: 'Đường Hàm Nghi',            status: 'NORMAL', streamPath: 'cam_13' },
-  { id: 'cam_14', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Bến Nghé (2)',    specificLocation: 'Đường Nguyễn Bỉnh Khiêm',  status: 'NORMAL', streamPath: 'cam_14' },
-  { id: 'cam_15', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Đa Kao (2)',      specificLocation: 'Đường Trương Định',         status: 'NORMAL', streamPath: 'cam_15' },
 ];
 
 const generateTimestamp = (daysAgo) => {

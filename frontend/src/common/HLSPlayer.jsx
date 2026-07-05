@@ -13,7 +13,8 @@ const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, onStatusChange }) =
   };
 
   useEffect(() => {
-    if (!hlsBaseUrl) {
+    // Empty hlsBaseUrl = relative path (vite proxy). Only block on null/false.
+    if (hlsBaseUrl === null || hlsBaseUrl === false) {
       updateStatus('no-url');
       return;
     }
@@ -31,10 +32,16 @@ const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, onStatusChange }) =
 
     if (Hls.isSupported()) {
       const hls = new Hls({
-        lowLatencyMode: true,
+        lowLatencyMode: false,
+        enableWorker: true,
         liveDurationInfinity: true,
-        maxBufferLength: 5,
-        maxMaxBufferLength: 10,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        liveSyncDurationCount: 3,
+        liveMaxLatencyDurationCount: 6,
+        manifestLoadingMaxRetry: 4,
+        levelLoadingTimeOut: 10000,
+        fragLoadingTimeOut: 20000,
       });
       hlsRef.current = hls;
 

@@ -29,6 +29,7 @@ const usePollApi = (url, fallback, intervalMs = 15000) => {
 
 // ── Flink jobs via REST ───────────────────────────────────────────────────
 const FLINK_URL = import.meta.env.VITE_FLINK_URL || 'http://localhost:8081';
+const GRAFANA_URL = import.meta.env.VITE_GRAFANA_DIRECT_URL || '/grafana-proxy';
 
 const useFlinkJobs = () => {
   const [jobs, setJobs]     = useState([]);
@@ -385,7 +386,7 @@ const StreamhouseStatus = () => {
         {[
           { href: FLINK_URL,  label: 'Flink Web UI',    icon: Zap,       color: 'text-amber-400'   },
           { href: 'http://localhost:9001',  label: 'MinIO Console',   icon: Database,  color: 'text-blue-400'    },
-          { href: 'http://localhost:3001',  label: 'Grafana',         icon: BarChart2, color: 'text-orange-400'  },
+          { href: GRAFANA_URL,  label: 'Grafana',         icon: BarChart2, color: 'text-orange-400'  },
           { href: 'http://localhost:9090',  label: 'Prometheus',      icon: Activity,  color: 'text-red-400'     },
           { href: 'http://localhost:18085', label: 'Kafka UI',        icon: Server,    color: 'text-emerald-400' },
           { href: 'http://localhost:8082',  label: 'Trino UI',        icon: Database,  color: 'text-purple-400'  },

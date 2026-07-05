@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Camera, Activity, Zap, Database, Clock, AlertTriangle, TrendingUp, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { MOCK_CAMERAS } from '../../constants';
+import { CAMERA_REGISTRY } from '../../constants';
 
 // ── helpers ────────────────────────────────────────────────────────────────
 const useApiData = (url, fallback = null) => {
@@ -83,7 +83,7 @@ const Home = () => {
   const peakScore = incidents?.length
     ? Math.max(...incidents.map(i => i.violence_score ?? 0))
     : 0;
-  const activeCams = MOCK_CAMERAS.filter(c => c.status !== 'OFFLINE').length;
+  const activeCams = CAMERA_REGISTRY.filter(c => c.status !== 'OFFLINE').length;
 
   const apiOnline = incStatus === 'ok' || statsStatus === 'ok';
   const hotHealthy  = layerCounts?.hot  != null && layerCounts.hot  >= 0;
@@ -142,7 +142,7 @@ const Home = () => {
         <KPICard
           title="Active Cameras"
           value={activeCams}
-          sub={`/ ${MOCK_CAMERAS.length} cameras`}
+          sub={`/ ${CAMERA_REGISTRY.length} cameras`}
           icon={Camera}
           accent={{ border: 'border-emerald-500/20', bg: 'bg-emerald-500/10', text: 'text-emerald-400' }}
         />

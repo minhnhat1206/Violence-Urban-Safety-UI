@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { BarChart2, Activity, Shield, Zap, Server, TrendingUp, ExternalLink, RefreshCw } from 'lucide-react';
 
-const GRAFANA_BASE = import.meta.env.VITE_GRAFANA_URL || 'http://34.124.131.144:3001';
+const trimTrailingSlash = (url) => url.replace(/\/+$/, '');
+
+const GRAFANA_BASE = trimTrailingSlash(import.meta.env.VITE_GRAFANA_URL || '/grafana-proxy');
+const GRAFANA_DIRECT_BASE = trimTrailingSlash(
+  import.meta.env.VITE_GRAFANA_DIRECT_URL || 'http://34.124.131.144:3001/grafana-proxy'
+);
 
 const DASHBOARDS = [
   {
@@ -53,6 +58,8 @@ const DASHBOARDS = [
 
 const buildIframeUrl = (uid, from = 'now-7d', to = 'now') =>
   `${GRAFANA_BASE}/d/${uid}?orgId=1&from=${from}&to=${to}&kiosk=tv&theme=dark&refresh=30s`;
+
+const buildDirectUrl = (uid) => `${GRAFANA_DIRECT_BASE}/d/${uid}?orgId=1&theme=dark`;
 
 const DashboardCard = ({ dash, onClick, active }) => {
   const Icon = dash.icon;
@@ -133,7 +140,7 @@ const GrafanaDashboard = () => {
             <RefreshCw size={14} />
           </button>
           <a
-            href={`${GRAFANA_BASE}/d/${active.uid}`}
+            href={buildDirectUrl(active.uid)}
             target="_blank"
             rel="noopener noreferrer"
             className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
@@ -159,7 +166,7 @@ const GrafanaDashboard = () => {
           {/* Quick links */}
           <div className="mt-2 pt-3 border-t border-slate-800">
             <p className="text-xs text-slate-600 uppercase tracking-wide mb-2 px-1">Quick links</p>
-            <a href={`${GRAFANA_BASE}`} target="_blank" rel="noopener noreferrer"
+            <a href={`${GRAFANA_DIRECT_BASE}`} target="_blank" rel="noopener noreferrer"
                className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800 transition-colors">
               <ExternalLink size={12} /> Grafana Home
             </a>

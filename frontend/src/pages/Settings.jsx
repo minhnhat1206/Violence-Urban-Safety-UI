@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MOCK_CAMERAS } from '../../constants';
+import { CAMERA_REGISTRY } from '../../constants';
 import { Video, Save, X, Play, Square, RefreshCw, Activity } from 'lucide-react';
 
 const LS_KEY    = 'hls_base_url';
@@ -50,7 +50,7 @@ const HLSUrlSection = () => {
         <h3 className="text-xl font-semibold text-white">Live Stream Configuration</h3>
       </div>
       <p className="text-slate-500 text-sm mb-4">
-        Paste the ngrok HTTPS URL exposing local MediaMTX port 8888.
+        Paste the MediaMTX HLS base URL (host port 18888 on datalab; 8888 is taken by VS Code).
         Streams will be loaded as <span className="font-mono text-slate-400">&lt;url&gt;/cam_XX/index.m3u8</span>.
       </p>
 
@@ -207,8 +207,8 @@ const CameraManagement = () => {
       .then(r => r.json())
       .then(d => { setCameras(d.cameras || []); setLoading(false); })
       .catch(() => {
-        // Fallback to MOCK_CAMERAS when admin API unavailable
-        setCameras(MOCK_CAMERAS.map(c => ({ camera_id: c.id, location: c.specificLocation, district: c.district, ward: c.ward, active: true })));
+        // Fallback to CAMERA_REGISTRY when admin API unavailable
+        setCameras(CAMERA_REGISTRY.map(c => ({ camera_id: c.id, location: c.specificLocation, district: c.district, ward: c.ward, active: true })));
         setLoading(false);
       });
   }, []);
