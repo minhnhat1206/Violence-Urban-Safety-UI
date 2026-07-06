@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { Loader2, VideoOff, Settings } from 'lucide-react';
 
-const BBOX_CAMERAS = ['cam_06'];
+const BBOX_CAMERAS = ['cam_01', 'cam_06'];
 
 const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, onStatusChange }) => {
   const videoRef = useRef(null);
