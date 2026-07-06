@@ -111,7 +111,7 @@ const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
               <span className={`font-mono font-bold ${
                 score >= 0.65 ? 'text-red-400' : score >= 0.4 ? 'text-orange-400' : 'text-emerald-400'
               }`}>
-                {(score * 100).toFixed(0)}%
+                {(score * 100).toFixed(2)}%
               </span>
             </div>
             <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
@@ -176,7 +176,7 @@ const FocusModal = ({ camera, onClose, hlsUrl, alertStatus }) => {
                 <span className={`font-mono font-bold text-sm ${
                   score >= 0.65 ? 'text-red-400 font-extrabold' : score >= 0.4 ? 'text-orange-400' : 'text-emerald-400'
                 }`}>
-                  {(score * 100).toFixed(0)}%
+                  {(score * 100).toFixed(2)}%
                 </span>
               </div>
               <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
