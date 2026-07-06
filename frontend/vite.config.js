@@ -41,6 +41,12 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/vio/, ''),
       },
 
+      // ── WebRTC live video (Vast.ai mediamtx :8889) ── proxy WHEP calls
+      '^/rtc_': {
+        target: 'http://localhost:8889', changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/rtc_/, ''),
+      },
+
       // ── HLS live video (Vast.ai mediamtx :8888) ── proxy ALL cam_* paths
       // Matches: cam_01, cam_01_result, cam_01_bbox, cam_02_result, etc.
       '^/cam_': {

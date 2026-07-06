@@ -1,25 +1,45 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, VideoOff } from 'lucide-react';
 
-const WebRTCPlayer = ({ streamPath, isMuted = true }) => {
+// Stream path selection:
+//   Normal state  → <streamPath>       (raw camera stream - zero latency)
+//   Violence ≥65% → <streamPath>_bbox  (bboxAPI — shows bounding boxes)
+
+const BBOX_CAMERAS   = ['cam_01', 'cam_02', 'cam_03', 'cam_04', 'cam_05'];
+
+const WebRTCPlayer = ({ streamPath, isMuted = true, alertStatus, onStatusChange }) => {
   const videoRef = useRef(null);
+  const pcRef    = useRef(null);
   const [status, setStatus] = useState('loading'); // 'loading' | 'playing' | 'error'
+
+  const isViolent      = alertStatus === 'VIOLENCE_DETECTED';
+  const hasBbox        = BBOX_CAMERAS.includes(streamPath);
+  const shouldShowBbox = hasBbox && isViolent;
+
+  // Determine target path based on alert state
+  const desiredPath = shouldShowBbox ? `${streamPath}_bbox` : streamPath;
+
+  const updateStatus = (s) => {
+    setStatus(s);
+    onStatusChange?.(s);
+  };
 
   useEffect(() => {
     if (!streamPath) {
-      setStatus('error');
+      updateStatus('error');
       return;
     }
 
     let isCancelled = false;
     let sessionUrl = '';
-    
-    // Thêm tham số cấu hình RTC để giảm buffer
+
+    // Create RTCPeerConnection for WHEP
     const pc = new RTCPeerConnection({
       bundlePolicy: "max-bundle",
       rtcpMuxPolicy: "require",
       iceTransportPolicy: "all"
     });
+    pcRef.current = pc;
 
     const remoteStream = new MediaStream();
     if (videoRef.current) {
@@ -27,26 +47,20 @@ const WebRTCPlayer = ({ streamPath, isMuted = true }) => {
     }
 
     pc.ontrack = (event) => {
+      if (isCancelled) return;
       remoteStream.addTrack(event.track);
     };
-    // pc.ontrack = (event) => {
-    //   remoteStream.addTrack(event.track);
-    //   
-    //   // Kiểm tra nếu trình duyệt hỗ trợ playoutDelayHint
-    //   const receiver = pc.getReceivers().find(r => r.track.kind === 'video');
-    //   if (receiver && 'playoutDelayHint' in receiver) {
-    //     receiver.playoutDelayHint = 5.0; // Đặt độ trễ là 5 giây
-    //   }
-    // };
+
     pc.onconnectionstatechange = () => {
       if (isCancelled) return;
       switch (pc.connectionState) {
         case 'connected':
+          updateStatus('playing');
           break;
         case 'disconnected':
         case 'failed':
         case 'closed':
-          setStatus('error');
+          updateStatus('error');
           break;
       }
     };
@@ -54,15 +68,17 @@ const WebRTCPlayer = ({ streamPath, isMuted = true }) => {
     const connect = async () => {
       try {
         if (isCancelled) return;
-        setStatus('loading');
+        updateStatus('loading');
 
+        // Add transceivers for receiving video and audio
         pc.addTransceiver('video', { direction: 'recvonly' });
         pc.addTransceiver('audio', { direction: 'recvonly' });
 
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
-        const whepUrl = `http://localhost:8889/${streamPath}/whep`;
+        // Connect using the Vite /rtc_ proxy (pointing to MediaMTX port 8889 WHEP)
+        const whepUrl = `/rtc_/${desiredPath}/whep`;
 
         const response = await fetch(whepUrl, {
           method: 'POST',
@@ -81,14 +97,15 @@ const WebRTCPlayer = ({ streamPath, isMuted = true }) => {
           throw new Error('Missing Location header');
         }
 
-        sessionUrl = new URL(location, whepUrl).href;
+        // Parse location for session deletion
+        sessionUrl = new URL(location, window.location.origin + whepUrl).pathname;
 
         const answerSdp = await response.text();
         await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
       } catch (e) {
         if (!isCancelled) {
-          console.error(`WebRTC connection failed for ${streamPath}:`, e);
-          setStatus('error');
+          console.error(`[WebRTCPlayer] connection failed for "${desiredPath}":`, e);
+          updateStatus('error');
         }
       }
     };
@@ -97,14 +114,14 @@ const WebRTCPlayer = ({ streamPath, isMuted = true }) => {
 
     return () => {
       isCancelled = true;
-
       if (sessionUrl) {
+        // Delete session to release server resources
         fetch(sessionUrl, { method: 'DELETE' }).catch(() => {});
       }
-
       pc.close();
+      pcRef.current = null;
     };
-  }, [streamPath]);
+  }, [desiredPath]);
 
   return (
     <div className="relative w-full h-full bg-black">
@@ -116,8 +133,8 @@ const WebRTCPlayer = ({ streamPath, isMuted = true }) => {
         className={`w-full h-full object-cover transition-opacity duration-300 ${
           status === 'playing' ? 'opacity-100' : 'opacity-0'
         }`}
-        onPlay={() => setStatus('playing')}
-        onPlaying={() => setStatus('playing')}
+        onPlay={() => updateStatus('playing')}
+        onPlaying={() => updateStatus('playing')}
       />
 
       {status === 'loading' && (
@@ -129,7 +146,7 @@ const WebRTCPlayer = ({ streamPath, isMuted = true }) => {
       {status === 'error' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 p-2 text-center">
           <VideoOff className="w-8 h-8 text-red-500 mb-2" />
-          <p className="text-xs text-slate-400">Stream unavailable</p>
+          <p className="text-xs text-slate-400">Stream unavailable (WebRTC)</p>
         </div>
       )}
     </div>

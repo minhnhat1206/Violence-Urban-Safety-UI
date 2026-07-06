@@ -4,7 +4,7 @@ import {
   X, Maximize, AlertTriangle, CheckCircle2,
   Video, VideoOff, Settings as SettingsIcon,
 } from 'lucide-react';
-import HLSPlayer from '../common/HLSPlayer';
+import WebRTCPlayer from '../common/WebRTCPlayer';
 
 const LS_KEY    = 'hls_base_url';
 const API       = import.meta.env.VITE_API_BASE_URL  || '';
@@ -71,9 +71,8 @@ const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
           </div>
         )}
 
-        <HLSPlayer
+        <WebRTCPlayer
           streamPath={camera.streamPath}
-          hlsBaseUrl={hlsUrl}
           isMuted
           alertStatus={status}
           onStatusChange={setStreamStatus}
@@ -154,9 +153,8 @@ const FocusModal = ({ camera, onClose, hlsUrl, alertStatus }) => {
         </div>
 
         <div className="aspect-video bg-black relative">
-          <HLSPlayer
+          <WebRTCPlayer
             streamPath={camera.streamPath}
-            hlsBaseUrl={hlsUrl}
             isMuted={false}
             alertStatus={status}
           />
