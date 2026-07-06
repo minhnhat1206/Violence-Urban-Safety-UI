@@ -2,15 +2,16 @@ const { executeTrinoQuery } = require('../services/trino.service');
 
 /**
  * Lấy danh sách Alert thời gian thực từ bảng Bronze
- * Sử dụng ai_timestamp làm ID vì bảng không có cột event_id
+ * Sử dụng incident_id làm ID
  */
 const getBronzeAlerts = async (req, res) => {
   try {
     const query = `
       SELECT 
-        ai_timestamp, camera_id, event_time, score, risk_level, is_violent, evidence_url, ward
-      FROM iceberg.default.bronzeviolence
-      ORDER BY event_time DESC
+        incident_id, camera_id, timestamp, risk_score, is_violent, frame_url, location
+      FROM paimon.security.violence_incidents
+      WHERE is_deleted = false
+      ORDER BY timestamp DESC
       LIMIT 50
     `;
 
@@ -21,10 +22,10 @@ const getBronzeAlerts = async (req, res) => {
       camera_id: row[1],    
       timestamp: row[2],    
       score: row[3] ? parseFloat(row[3]) : 0, 
-      label: row[4],        
-      is_violent: row[5],   
-      frame_url: row[6],
-      ward: row[7] // Lấy cột ward từ kết quả query
+      label: parseFloat(row[3]) >= 0.65 ? 'Violence' : 'Normal',        
+      is_violent: row[4],   
+      frame_url: row[5],
+      ward: row[6]
     }));
 
     res.json(alerts);
@@ -32,60 +33,56 @@ const getBronzeAlerts = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch bronze alerts' });
   }
 };
+
 /**
- * Xóa một sự kiện khỏi database dựa trên ai_timestamp
- * Yêu cầu bảng bronzeviolence phải là Iceberg v2
+ * Xóa một sự kiện khỏi database dựa trên incident_id
  */
 const deleteAlert = async (req, res) => {
   try {
-    const { id } = req.params; // Đây chính là ai_timestamp gửi từ frontend
+    const { id } = req.params;
 
     if (!id) {
-      return res.status(400).json({ error: 'Event ID (ai_timestamp) is required' });
+      return res.status(400).json({ error: 'Event ID (incident_id) is required' });
     }
 
-    const query = `DELETE FROM iceberg.default.bronzeviolence WHERE ai_timestamp = '${id}'`;
+    const query = `UPDATE paimon.security.violence_incidents SET is_deleted = true WHERE incident_id = '${id}'`;
     
     await executeTrinoQuery(query);
 
     res.json({ 
-      message: 'Event deleted successfully from Bronze layer',
+      message: 'Event marked as deleted in Paimon layer',
       event_id: id 
     });
   } catch (err) {
     console.error('Delete Alert Error:', err.message);
     res.status(500).json({ 
-      error: 'Delete failed', 
-      details: 'Ensure Iceberg table is v2. Run: ALTER TABLE bronzeviolence SET PROPERTIES (format_version=2)' 
+      error: 'Delete failed'
     });
   }
 };
 
 /**
- * Logic cho trang Dashboard chính (Star Schema)
+ * Logic cho trang Dashboard chính (Sessionized incidents view)
  */
 const getLiveAlerts = async (req, res) => {
   try {
     const query = `
       SELECT 
-        f.fact_id, c.camera_id, l.street, l.district, 
-        f.window_start, f.evidence_url, f.max_risk_score
-      FROM iceberg.default.fact_camera_monitoring AS f
-      LEFT JOIN iceberg.default.dim_camera AS c ON f.camera_key = c.camera_key
-      LEFT JOIN iceberg.default.dim_location AS l ON f.location_key = l.location_key
-      WHERE f.is_violent_window = true
-      ORDER BY f.window_start DESC
+        incident_id, camera_id, location, timestamp, frame_url, risk_score
+      FROM iceberg.default.violence_incidents_sessionized
+      WHERE is_violent = true AND is_deleted = false
+      ORDER BY timestamp DESC
       LIMIT 20
     `;
 
     const rawData = await executeTrinoQuery(query);
     const alerts = rawData.map(row => ({
       event_id: row[0],
-      location: `${row[1]} - ${row[2]}, ${row[3]}`, 
-      timestamp: row[4], 
-      frame_url: row[5] || 'https://via.placeholder.com/640x360?text=No+Evidence',
+      location: `${row[1]} - ${row[2]}`, 
+      timestamp: row[3], 
+      frame_url: row[4] || 'https://via.placeholder.com/640x360?text=No+Evidence',
       label: 'Violence Detected',
-      violence_score: parseFloat(row[6]).toFixed(4), 
+      violence_score: parseFloat(row[5]).toFixed(4), 
       status: 'Unreviewed'
     }));
 

@@ -4,13 +4,10 @@ const getAnalyticsData = async (req, res) => {
   try {
     const query = `
       SELECT 
-        f.window_start, l.district, l.ward, c.camera_id,
-        f.is_violent_window, f.max_risk_score, f.total_duration_sec,
-        f.avg_fps, f.avg_latency_ms, f.alert_count
-      FROM iceberg.default.fact_camera_monitoring AS f
-      LEFT JOIN iceberg.default.dim_location AS l ON f.location_key = l.location_key
-      LEFT JOIN iceberg.default.dim_camera AS c ON f.camera_key = c.camera_key
-      ORDER BY f.window_start DESC
+        timestamp, location, camera_id, is_violent, risk_score
+      FROM paimon.security.violence_incidents
+      WHERE is_deleted = false
+      ORDER BY timestamp DESC
       LIMIT 1000
     `;
 
@@ -19,15 +16,15 @@ const getAnalyticsData = async (req, res) => {
     // Map dữ liệu cho Frontend Recharts
     const analyticsData = rawData.map(row => ({
       timestamp: row[0],
-      district: row[1] || 'Unknown',
-      ward: row[2] || 'Unknown',
-      camera_id: row[3],
-      is_violent: row[4],
-      risk_score: row[5] ? parseFloat(row[5]) : 0,
-      duration: row[6] ? parseFloat(row[6]) : 0,
-      fps: row[7] ? parseFloat(row[7]) : 0,
-      latency: row[8] ? parseFloat(row[8]) : 0,
-      alert_count: row[9] ? parseInt(row[9]) : 0
+      district: 'Hồ Chí Minh',
+      ward: row[1] || 'Unknown',
+      camera_id: row[2],
+      is_violent: row[3],
+      risk_score: row[4] ? parseFloat(row[4]) : 0,
+      duration: 10,  // static duration for charts
+      fps: 15,       // static FPS
+      latency: 800,  // static latency
+      alert_count: 1
     }));
 
     res.json(analyticsData);
