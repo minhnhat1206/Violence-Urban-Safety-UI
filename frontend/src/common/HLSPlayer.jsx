@@ -3,11 +3,10 @@ import Hls from 'hls.js';
 import { Loader2, VideoOff, Settings } from 'lucide-react';
 
 // Stream priority per camera:
-//   Normal state  → <streamPath>_result  (MoViNet annotated — shows violence % on video)
-//   Violence ≥65% → <streamPath>_bbox    (bboxAPI — shows bounding boxes)
-//   Fallback      → <streamPath>          (raw stream)
+//   Normal state  → <streamPath>       (raw camera stream - zero latency)
+//   Violence ≥65% → <streamPath>_bbox  (bboxAPI — shows bounding boxes)
+//   Fallback      → <streamPath>
 
-const RESULT_CAMERAS = ['cam_01', 'cam_02', 'cam_03', 'cam_04', 'cam_05'];
 const BBOX_CAMERAS   = ['cam_01', 'cam_02', 'cam_03', 'cam_04', 'cam_05'];
 
 const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, alertStatus, onStatusChange }) => {
@@ -17,16 +16,10 @@ const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, alertStatus, onStat
 
   const isViolent         = alertStatus === 'VIOLENCE_DETECTED';
   const hasBbox           = BBOX_CAMERAS.includes(streamPath);
-  const hasResult         = RESULT_CAMERAS.includes(streamPath);
   const shouldShowBbox    = hasBbox && isViolent;
-  const shouldShowResult  = hasResult && !shouldShowBbox;
 
   // Determine desired path based on alert state
-  const desiredPath = shouldShowBbox
-    ? `${streamPath}_bbox`
-    : shouldShowResult
-      ? `${streamPath}_result`
-      : streamPath;
+  const desiredPath = shouldShowBbox ? `${streamPath}_bbox` : streamPath;
 
   const [currentPath, setCurrentPath] = useState(desiredPath);
   const [fallbackLevel, setFallbackLevel] = useState(0); // 0=desired, 1=raw fallback
