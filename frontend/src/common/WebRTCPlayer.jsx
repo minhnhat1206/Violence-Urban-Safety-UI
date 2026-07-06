@@ -98,7 +98,8 @@ const WebRTCPlayer = ({ streamPath, isMuted = true, alertStatus, onStatusChange 
         }
 
         // Parse location for session deletion
-        sessionUrl = new URL(location, window.location.origin + whepUrl).pathname;
+        const locationPath = new URL(location, window.location.origin + whepUrl).pathname;
+        sessionUrl = locationPath.startsWith('/rtc_') ? locationPath : `/rtc_${locationPath}`;
 
         const answerSdp = await response.text();
         await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
