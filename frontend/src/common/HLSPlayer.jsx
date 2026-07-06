@@ -4,26 +4,30 @@ import { Loader2, VideoOff, Settings } from 'lucide-react';
 
 const BBOX_CAMERAS = ['cam_01', 'cam_02', 'cam_03', 'cam_04', 'cam_05', 'cam_06'];
 
-const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, onStatusChange }) => {
+const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, alertStatus, onStatusChange }) => {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const [status, setStatus] = useState('loading'); // 'loading' | 'playing' | 'error' | 'no-url'
   
+  // Only display bounding boxes when the camera is in violent alert state (score >= 0.65)
+  const isViolent = alertStatus === 'VIOLENCE_DETECTED';
+  const isBboxConfigured = BBOX_CAMERAS.includes(streamPath);
+  const shouldShowBbox = isBboxConfigured && isViolent;
+
   // Track current playing path and whether we are trying bbox stream
   const [currentPath, setCurrentPath] = useState(streamPath);
-  const [tryBbox, setTryBbox] = useState(BBOX_CAMERAS.includes(streamPath));
+  const [tryBbox, setTryBbox] = useState(shouldShowBbox);
 
   const updateStatus = (s) => {
     setStatus(s);
     onStatusChange?.(s);
   };
 
-  // Reset states when base streamPath changes
+  // Reset states when base streamPath or shouldShowBbox changes
   useEffect(() => {
-    const isBbox = BBOX_CAMERAS.includes(streamPath);
-    setCurrentPath(isBbox ? `${streamPath}_bbox` : streamPath);
-    setTryBbox(isBbox);
-  }, [streamPath]);
+    setCurrentPath(shouldShowBbox ? `${streamPath}_bbox` : streamPath);
+    setTryBbox(shouldShowBbox);
+  }, [streamPath, shouldShowBbox]);
 
   useEffect(() => {
     if (!hlsBaseUrl) {

@@ -72,6 +72,7 @@ const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
           streamPath={camera.streamPath}
           hlsBaseUrl={hlsUrl}
           isMuted
+          alertStatus={alertMap[camera.id]}
           onStatusChange={setStreamStatus}
         />
 
@@ -128,6 +129,7 @@ const FocusModal = ({ camera, onClose, hlsUrl, alertStatus }) => {
             streamPath={camera.streamPath}
             hlsBaseUrl={hlsUrl}
             isMuted={false}
+            alertStatus={alertStatus}
           />
         </div>
 
