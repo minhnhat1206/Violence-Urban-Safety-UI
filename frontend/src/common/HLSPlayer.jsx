@@ -2,49 +2,66 @@ import React, { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { Loader2, VideoOff, Settings } from 'lucide-react';
 
-const BBOX_CAMERAS = ['cam_01', 'cam_02', 'cam_03', 'cam_04', 'cam_05', 'cam_06'];
+// Stream priority per camera:
+//   Normal state  → <streamPath>_result  (MoViNet annotated — shows violence % on video)
+//   Violence ≥65% → <streamPath>_bbox    (bboxAPI — shows bounding boxes)
+//   Fallback      → <streamPath>          (raw stream)
+
+const RESULT_CAMERAS = ['cam_01', 'cam_02', 'cam_03', 'cam_04', 'cam_05'];
+const BBOX_CAMERAS   = ['cam_01', 'cam_02', 'cam_03', 'cam_04', 'cam_05'];
 
 const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, alertStatus, onStatusChange }) => {
   const videoRef = useRef(null);
-  const hlsRef = useRef(null);
+  const hlsRef   = useRef(null);
   const [status, setStatus] = useState('loading'); // 'loading' | 'playing' | 'error' | 'no-url'
-  
-  // Only display bounding boxes when the camera is in violent alert state (score >= 0.65)
-  const isViolent = alertStatus === 'VIOLENCE_DETECTED';
-  const isBboxConfigured = BBOX_CAMERAS.includes(streamPath);
-  const shouldShowBbox = isBboxConfigured && isViolent;
 
-  // Track current playing path and whether we are trying bbox stream
-  const [currentPath, setCurrentPath] = useState(streamPath);
-  const [tryBbox, setTryBbox] = useState(shouldShowBbox);
+  const isViolent         = alertStatus === 'VIOLENCE_DETECTED';
+  const hasBbox           = BBOX_CAMERAS.includes(streamPath);
+  const hasResult         = RESULT_CAMERAS.includes(streamPath);
+  const shouldShowBbox    = hasBbox && isViolent;
+  const shouldShowResult  = hasResult && !shouldShowBbox;
+
+  // Determine desired path based on alert state
+  const desiredPath = shouldShowBbox
+    ? `${streamPath}_bbox`
+    : shouldShowResult
+      ? `${streamPath}_result`
+      : streamPath;
+
+  const [currentPath, setCurrentPath] = useState(desiredPath);
+  const [fallbackLevel, setFallbackLevel] = useState(0); // 0=desired, 1=raw fallback
 
   const updateStatus = (s) => {
     setStatus(s);
     onStatusChange?.(s);
   };
 
-  // Reset states when base streamPath or shouldShowBbox changes
+  // Reset when desired path changes (stream switch on alert toggle)
   useEffect(() => {
-    setCurrentPath(shouldShowBbox ? `${streamPath}_bbox` : streamPath);
-    setTryBbox(shouldShowBbox);
-  }, [streamPath, shouldShowBbox]);
+    setCurrentPath(desiredPath);
+    setFallbackLevel(0);
+  }, [desiredPath]);
 
   useEffect(() => {
-    if (!hlsBaseUrl) {
-      updateStatus('no-url');
-      return;
-    }
+    if (!hlsBaseUrl) { updateStatus('no-url'); return; }
+    if (!currentPath) { updateStatus('error'); return; }
 
-    if (!currentPath) {
-      updateStatus('error');
-      return;
-    }
-
-    const src = `${hlsBaseUrl.replace(/\/$/, '')}/${currentPath}/index.m3u8`;
+    const src   = `${hlsBaseUrl.replace(/\/$/, '')}/${currentPath}/index.m3u8`;
     const video = videoRef.current;
     if (!video) return;
 
     updateStatus('loading');
+
+    const handleFatalError = () => {
+      if (fallbackLevel === 0 && currentPath !== streamPath) {
+        // First fallback: try raw stream
+        console.warn(`[HLSPlayer] "${currentPath}" failed — falling back to raw "${streamPath}"`);
+        setFallbackLevel(1);
+        setCurrentPath(streamPath);
+      } else {
+        updateStatus('error');
+      }
+    };
 
     if (Hls.isSupported()) {
       const hls = new Hls({
@@ -59,46 +76,18 @@ const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, alertStatus, onStat
 
       hls.loadSource(src);
       hls.attachMedia(video);
-
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => {});
-      });
-
-      hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) {
-          if (tryBbox) {
-            console.warn(`[HLSPlayer] Failed to load bbox stream at ${currentPath}, falling back to raw ${streamPath}`);
-            setTryBbox(false);
-            setCurrentPath(streamPath);
-          } else {
-            updateStatus('error');
-          }
-        }
-      });
-
+      hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}); });
+      hls.on(Hls.Events.ERROR, (_, data) => { if (data.fatal) handleFatalError(); });
       video.onplaying = () => updateStatus('playing');
 
-      return () => {
-        hls.destroy();
-        hlsRef.current = null;
-      };
+      return () => { hls.destroy(); hlsRef.current = null; };
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // Safari native HLS
       video.src = src;
       video.onplaying = () => updateStatus('playing');
-      video.onerror = () => {
-        if (tryBbox) {
-          console.warn(`[HLSPlayer Safari] Failed to load bbox stream at ${currentPath}, falling back to raw ${streamPath}`);
-          setTryBbox(false);
-          setCurrentPath(streamPath);
-        } else {
-          updateStatus('error');
-        }
-      };
+      video.onerror   = handleFatalError;
       video.play().catch(() => {});
-      return () => {
-        video.src = '';
-      };
+      return () => { video.src = ''; };
     } else {
       updateStatus('error');
     }
