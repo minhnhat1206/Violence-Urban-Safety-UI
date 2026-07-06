@@ -4,6 +4,7 @@
   "installCommand": "npm install",
   "framework": "vite",
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "http://34.124.131.144:5002/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
@@ -24,7 +25,6 @@
     }
   ],
   "env": {
-    "VITE_API_BASE_URL": "@vite_api_base_url",
     "VITE_APP_TITLE": "Vigilance AI — Smart Security Monitoring"
   }
 }
