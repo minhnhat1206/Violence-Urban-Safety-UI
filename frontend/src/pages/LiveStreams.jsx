@@ -226,20 +226,30 @@ const LiveStreams = () => {
     return () => window.removeEventListener('pipeline-cameras-changed', fetchActive);
   }, []);
 
-  // Poll camera violence status from chatbot API
+  // Poll camera violence status from local MoViNet inference server
   useEffect(() => {
-    const fetch_ = () => {
-      fetch(`${API}/api/camera-status`)
-        .then(r => { if (!r.ok) throw 0; return r.json(); })
-        .then(({ cameras: map }) => {
-          if (map && typeof map === 'object') setAlertMap(map);
-        })
-        .catch(() => {});
+    const fetch_ = async () => {
+      const newMap = {};
+      const promises = cameras.map(camera =>
+        fetch(`/vio/api/stream/status/${camera.id}`)
+          .then(r => { if (!r.ok) throw 0; return r.json(); })
+          .then(data => {
+            newMap[camera.id] = {
+              status: data.is_violent ? 'VIOLENCE_DETECTED' : 'NORMAL',
+              score: data.score
+            };
+          })
+          .catch(() => {
+            newMap[camera.id] = { status: 'NORMAL', score: 0 };
+          })
+      );
+      await Promise.all(promises);
+      setAlertMap(newMap);
     };
     fetch_();
-    const id = setInterval(fetch_, 5000);
+    const id = setInterval(fetch_, 2000); // Poll every 2 seconds for high responsiveness
     return () => clearInterval(id);
-  }, []);
+  }, [cameras]);
 
   // Only show cameras that are active (or all if admin API unavailable)
   const visibleCameras = activeCamIds
