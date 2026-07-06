@@ -49,9 +49,12 @@ const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
     return () => clearInterval(timer);
   }, []);
 
+  const status = alertStatus?.status || camera.status;
+  const score  = alertStatus?.score || 0;
+
   const effectiveStatus = !hlsUrl
     ? 'OFFLINE'
-    : alertStatus || camera.status;
+    : status;
 
   const isLive = streamStatus === 'playing';
 
@@ -72,7 +75,7 @@ const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
           streamPath={camera.streamPath}
           hlsBaseUrl={hlsUrl}
           isMuted
-          alertStatus={alertStatus}
+          alertStatus={status}
           onStatusChange={setStreamStatus}
         />
 
@@ -89,14 +92,38 @@ const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
         </div>
       </div>
 
-      <div className="px-3 py-2 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${statusStyle(effectiveStatus)}`}>
-            {effectiveStatus === 'VIOLENCE_DETECTED' ? '⚠ ALERT' : effectiveStatus}
-          </span>
-          <span className="text-xs text-slate-600 font-mono">{camera.id}</span>
+      <div className="px-3 pb-3 pt-2 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${statusStyle(effectiveStatus)}`}>
+              {effectiveStatus === 'VIOLENCE_DETECTED' ? '⚠ ALERT' : effectiveStatus}
+            </span>
+            <span className="text-xs text-slate-600 font-mono">{camera.id}</span>
+          </div>
+          <span className="text-xs text-slate-500 font-mono">{time.toLocaleTimeString()}</span>
         </div>
-        <span className="text-xs text-slate-500 font-mono">{time.toLocaleTimeString()}</span>
+
+        {/* Real-time score indicator and status bar below NORMAL / cam_01 */}
+        {hlsUrl && (
+          <div className="flex flex-col gap-1 pt-1.5 border-t border-slate-800/40">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-500 font-semibold uppercase tracking-wider text-[9px]">Violence Risk</span>
+              <span className={`font-mono font-bold ${
+                score >= 0.65 ? 'text-red-400' : score >= 0.4 ? 'text-orange-400' : 'text-emerald-400'
+              }`}>
+                {(score * 100).toFixed(0)}%
+              </span>
+            </div>
+            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  score >= 0.65 ? 'bg-red-500 animate-pulse' : score >= 0.4 ? 'bg-orange-500' : 'bg-emerald-500'
+                }`}
+                style={{ width: `${Math.min(100, Math.max(0, score * 100))}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -104,7 +131,9 @@ const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
 
 // ─── Focus Modal ─────────────────────────────────────────────────────────────
 const FocusModal = ({ camera, onClose, hlsUrl, alertStatus }) => {
-  const effectiveStatus = !hlsUrl ? 'OFFLINE' : alertStatus || camera.status;
+  const status = alertStatus?.status || camera.status;
+  const score  = alertStatus?.score || 0;
+  const effectiveStatus = !hlsUrl ? 'OFFLINE' : status;
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -124,18 +153,42 @@ const FocusModal = ({ camera, onClose, hlsUrl, alertStatus }) => {
           </div>
         </div>
 
-        <div className="aspect-video bg-black">
+        <div className="aspect-video bg-black relative">
           <HLSPlayer
             streamPath={camera.streamPath}
             hlsBaseUrl={hlsUrl}
             isMuted={false}
-            alertStatus={alertStatus}
+            alertStatus={status}
           />
         </div>
 
-        <div className="px-4 py-3 bg-slate-900/50 flex justify-between items-center text-sm text-slate-400">
-          <span className="font-mono">{camera.id} · HLS</span>
-          <span>{new Date().toLocaleString('vi-VN')}</span>
+        <div className="px-4 py-3 bg-slate-900/50 flex flex-col gap-2 border-t border-slate-800">
+          <div className="flex justify-between items-center text-sm text-slate-400">
+            <span className="font-mono">{camera.id} · HLS</span>
+            <span>{new Date().toLocaleString('vi-VN')}</span>
+          </div>
+
+          {/* Large Real-time score indicator and status bar below modal video */}
+          {hlsUrl && (
+            <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-800/40">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400 font-bold uppercase tracking-wider">Violence Risk Level</span>
+                <span className={`font-mono font-bold text-sm ${
+                  score >= 0.65 ? 'text-red-400 font-extrabold' : score >= 0.4 ? 'text-orange-400' : 'text-emerald-400'
+                }`}>
+                  {(score * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    score >= 0.65 ? 'bg-red-500 animate-pulse' : score >= 0.4 ? 'bg-orange-500' : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.max(0, score * 100))}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -148,7 +201,7 @@ const LiveStreams = () => {
   const [activeCamIds, setActiveCamIds] = useState(null); // null = loading, Set when loaded
   const [focusedCamera, setFocus]     = useState(null);
   const [hlsUrl, setHlsUrl]           = useState(() => localStorage.getItem(LS_KEY) || '');
-  const [alertMap, setAlertMap]       = useState({});  // cam_id → status
+  const [alertMap, setAlertMap]       = useState({});  // cam_id → { status, score }
 
   // Sync HLS URL from localStorage when Settings saves it
   useEffect(() => {
@@ -193,7 +246,7 @@ const LiveStreams = () => {
     ? cameras.filter(c => activeCamIds.has(c.id))
     : cameras;
 
-  const alertCount  = visibleCameras.filter(c => alertMap[c.id] === 'VIOLENCE_DETECTED').length;
+  const alertCount  = visibleCameras.filter(c => alertMap[c.id]?.status === 'VIOLENCE_DETECTED').length;
   const onlineCount = hlsUrl ? visibleCameras.length : 0;
   const totalCount  = cameras.length;
   const activeCount = activeCamIds ? activeCamIds.size : totalCount;
