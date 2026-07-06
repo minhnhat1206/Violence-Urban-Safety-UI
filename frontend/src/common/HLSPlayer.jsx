@@ -58,13 +58,13 @@ const HLSPlayer = ({ streamPath, hlsBaseUrl, isMuted = true, alertStatus, onStat
 
     if (Hls.isSupported()) {
       const hls = new Hls({
-        lowLatencyMode: false,       // Disable low-latency mode to allow a larger buffer
+        lowLatencyMode: true,        // Enable low-latency for real-time sync with API scores
         liveDurationInfinity: true,
-        maxBufferLength: 15,         // Increase target buffer to 15 seconds to prevent freezing
-        maxMaxBufferLength: 30,      // Max buffer size up to 30 seconds
-        manifestLoadingTimeOut: 5000,
-        manifestLoadingMaxRetry: 3,  // Retry 3 times on manifest load fail
-        levelLoadingTimeOut: 5000,
+        maxBufferLength: 2,          // Buffer only 2 seconds to match real-time API
+        maxMaxBufferLength: 4,       // Max buffer up to 4 seconds
+        manifestLoadingTimeOut: 3000,
+        manifestLoadingMaxRetry: 3,
+        levelLoadingTimeOut: 3000,
         levelLoadingMaxRetry: 3,
       });
       hlsRef.current = hls;
