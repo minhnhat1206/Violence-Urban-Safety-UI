@@ -27,6 +27,9 @@ export const MOCK_CAMERAS = [
   { id: 'cam_15', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Đa Kao (2)',      specificLocation: 'Đường Trương Định',         status: 'NORMAL', streamPath: 'cam_15' },
 ];
 
+// Alias for backward compatibility — some pages import CAMERA_REGISTRY
+export const CAMERA_REGISTRY = MOCK_CAMERAS;
+
 const generateTimestamp = (daysAgo) => {
   const date = new Date();
   date.setDate(date.getDate() - daysAgo);
