@@ -1,92 +1,103 @@
 const { executeTrinoQuery } = require('../services/trino.service');
 
 /**
- * Lấy danh sách Alert thời gian thực từ bảng Bronze
- * Sử dụng ai_timestamp làm ID vì bảng không có cột event_id
+ * Danh sách alert (event grain) từ WARM — paimon.security.violence_incidents.
+ * Thay bảng legacy iceberg.default.bronzeviolence (schema v1, không còn được ghi).
  */
 const getBronzeAlerts = async (req, res) => {
   try {
     const query = `
-      SELECT 
-        ai_timestamp, camera_id, event_time, score, risk_level, is_violent, evidence_url, ward
-      FROM iceberg.default.bronzeviolence
-      ORDER BY event_time DESC
+      SELECT
+        incident_id, camera_id, CAST("timestamp" AS VARCHAR) AS event_time,
+        risk_score, event_type, is_violent, frame_url, location
+      FROM paimon.security.violence_incidents
+      WHERE is_violent = true
+      ORDER BY "timestamp" DESC
       LIMIT 50
     `;
 
     const rawData = await executeTrinoQuery(query);
 
     const alerts = rawData.map(row => ({
-      event_id: row[0],     
-      camera_id: row[1],    
-      timestamp: row[2],    
-      score: row[3] ? parseFloat(row[3]) : 0, 
-      label: row[4],        
-      is_violent: row[5],   
+      event_id: row[0],
+      camera_id: row[1],
+      timestamp: row[2],
+      score: row[3] ? parseFloat(row[3]) : 0,
+      label: row[4] || 'Violence',
+      is_violent: row[5],
       frame_url: row[6],
-      ward: row[7] // Lấy cột ward từ kết quả query
+      ward: row[7]
     }));
 
     res.json(alerts);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch bronze alerts' });
+    console.error('Bronze Alerts Error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch alerts' });
   }
 };
+
 /**
- * Xóa một sự kiện khỏi database dựa trên ai_timestamp
- * Yêu cầu bảng bronzeviolence phải là Iceberg v2
+ * Ẩn một sự kiện khỏi dashboard (soft delete qua cột is_deleted).
+ * Paimon qua Trino không đảm bảo hỗ trợ DELETE/UPDATE ở mọi version connector
+ * → thử UPDATE, nếu connector không hỗ trợ thì trả lỗi rõ ràng.
  */
 const deleteAlert = async (req, res) => {
   try {
-    const { id } = req.params; // Đây chính là ai_timestamp gửi từ frontend
+    const { id } = req.params; // incident_id
 
-    if (!id) {
-      return res.status(400).json({ error: 'Event ID (ai_timestamp) is required' });
+    if (!id || !/^[A-Za-z0-9_-]+$/.test(id)) {
+      return res.status(400).json({ error: 'Valid event ID (incident_id) is required' });
     }
 
-    const query = `DELETE FROM iceberg.default.bronzeviolence WHERE ai_timestamp = '${id}'`;
-    
+    const query = `UPDATE paimon.security.violence_incidents SET is_deleted = true WHERE incident_id = '${id}'`;
+
     await executeTrinoQuery(query);
 
-    res.json({ 
-      message: 'Event deleted successfully from Bronze layer',
-      event_id: id 
+    res.json({
+      message: 'Event hidden successfully (is_deleted = true)',
+      event_id: id
     });
   } catch (err) {
     console.error('Delete Alert Error:', err.message);
-    res.status(500).json({ 
-      error: 'Delete failed', 
-      details: 'Ensure Iceberg table is v2. Run: ALTER TABLE bronzeviolence SET PROPERTIES (format_version=2)' 
+    res.status(500).json({
+      error: 'Delete failed',
+      details: 'Paimon-Trino connector may not support UPDATE in this version'
     });
   }
 };
 
 /**
- * Logic cho trang Dashboard chính (Star Schema)
+ * Trang Dashboard chính — star schema v2: fact_violence_incident (grain = 1 VỤ)
+ * join dim_camera (SCD2, is_current) + dim_event_type. frame_url là ảnh PEAK có bbox.
  */
 const getLiveAlerts = async (req, res) => {
   try {
     const query = `
-      SELECT 
-        f.fact_id, c.camera_id, l.street, l.district, 
-        f.window_start, f.evidence_url, f.max_risk_score
-      FROM iceberg.default.fact_camera_monitoring AS f
-      LEFT JOIN iceberg.default.dim_camera AS c ON f.camera_key = c.camera_key
-      LEFT JOIN iceberg.default.dim_location AS l ON f.location_key = l.location_key
-      WHERE f.is_violent_window = true
-      ORDER BY f.window_start DESC
+      SELECT
+        f.incident_id, f.camera_id, c.street, c.district,
+        CAST(f.start_ts AS VARCHAR) AS start_ts, f.frame_url, f.max_risk_score,
+        COALESCE(et.event_code, 'UNKNOWN') AS event_type,
+        f.duration_sec, f.people_count
+      FROM paimon.security.fact_violence_incident AS f
+      LEFT JOIN paimon.security.dim_camera AS c
+        ON f.camera_id = c.camera_id AND c.is_current = true
+      LEFT JOIN paimon.security.dim_event_type AS et
+        ON f.event_type_id = et.event_type_id
+      ORDER BY f.start_ts DESC
       LIMIT 20
     `;
 
     const rawData = await executeTrinoQuery(query);
     const alerts = rawData.map(row => ({
       event_id: row[0],
-      location: `${row[1]} - ${row[2]}, ${row[3]}`, 
-      timestamp: row[4], 
+      location: `${row[1]} - ${row[2] || 'Unknown'}, ${row[3] || ''}`,
+      timestamp: row[4],
       frame_url: row[5] || 'https://via.placeholder.com/640x360?text=No+Evidence',
-      label: 'Violence Detected',
-      violence_score: parseFloat(row[6]).toFixed(4), 
-      status: 'Unreviewed'
+      label: row[7] === 'UNKNOWN' ? 'Violence Detected' : row[7],
+      violence_score: parseFloat(row[6]).toFixed(4),
+      status: 'Unreviewed',
+      duration_sec: row[8],
+      people_count: row[9]
     }));
 
     res.json(alerts);
@@ -96,8 +107,8 @@ const getLiveAlerts = async (req, res) => {
   }
 };
 
-module.exports = { 
-  getLiveAlerts, 
-  getBronzeAlerts, 
-  deleteAlert 
+module.exports = {
+  getLiveAlerts,
+  getBronzeAlerts,
+  deleteAlert
 };

@@ -1,22 +1,27 @@
 const { executeTrinoQuery } = require('../services/trino.service');
 
+/**
+ * Analytics — star schema v2: fact_violence_incident (grain = 1 VỤ, đã sessionize)
+ * join dim_camera SCD2. alert_count = event_count (số event thô trong vụ).
+ */
 const getAnalyticsData = async (req, res) => {
   try {
     const query = `
-      SELECT 
-        f.window_start, l.district, l.ward, c.camera_id,
-        f.is_violent_window, f.max_risk_score, f.total_duration_sec,
-        f.avg_fps, f.avg_latency_ms, f.alert_count
-      FROM iceberg.default.fact_camera_monitoring AS f
-      LEFT JOIN iceberg.default.dim_location AS l ON f.location_key = l.location_key
-      LEFT JOIN iceberg.default.dim_camera AS c ON f.camera_key = c.camera_key
-      ORDER BY f.window_start DESC
+      SELECT
+        CAST(f.start_ts AS VARCHAR) AS start_ts, c.district, c.ward, f.camera_id,
+        f.is_violent, f.max_risk_score, f.duration_sec,
+        f.people_count, f.avg_confidence, f.event_count
+      FROM paimon.security.fact_violence_incident AS f
+      LEFT JOIN paimon.security.dim_camera AS c
+        ON f.camera_id = c.camera_id AND c.is_current = true
+      ORDER BY f.start_ts DESC
       LIMIT 1000
     `;
 
     const rawData = await executeTrinoQuery(query);
 
-    // Map dữ liệu cho Frontend Recharts
+    // Map dữ liệu cho Frontend Recharts (giữ nguyên shape v1;
+    // fps/latency không thuộc fact — thay bằng people_count/avg_confidence)
     const analyticsData = rawData.map(row => ({
       timestamp: row[0],
       district: row[1] || 'Unknown',
@@ -25,9 +30,9 @@ const getAnalyticsData = async (req, res) => {
       is_violent: row[4],
       risk_score: row[5] ? parseFloat(row[5]) : 0,
       duration: row[6] ? parseFloat(row[6]) : 0,
-      fps: row[7] ? parseFloat(row[7]) : 0,
-      latency: row[8] ? parseFloat(row[8]) : 0,
-      alert_count: row[9] ? parseInt(row[9]) : 0
+      fps: row[7] ? parseFloat(row[7]) : 0,        // people_count
+      latency: row[8] ? parseFloat(row[8]) : 0,    // avg_confidence
+      alert_count: row[9] ? parseInt(row[9]) : 0   // event_count trong vụ
     }));
 
     res.json(analyticsData);
