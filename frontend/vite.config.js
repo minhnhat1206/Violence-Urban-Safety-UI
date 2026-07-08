@@ -18,8 +18,21 @@ export default defineConfig({
         changeOrigin: true,
       },
 
+      // ── Chatbot /chat + /health (GCP :5002) ── route gốc của chatbot KHÔNG có
+      // prefix /api → rewrite bỏ /api trước khi forward.
+      '/api/chat': {
+        target: process.env.CHATBOT_URL || 'http://34.124.131.144:5002',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+      '/api/health': {
+        target: process.env.CHATBOT_URL || 'http://34.124.131.144:5002',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+
       // ── Chatbot API (GCP :5002) ── recent-incidents/stats/layer-counts/
-      // latency/chat/evidence... — same-origin, hết hardcode IP trong constants.
+      // latency/evidence/grafana... (các route này có sẵn prefix /api phía chatbot).
       '/api': {
         target: process.env.CHATBOT_URL || 'http://34.124.131.144:5002',
         changeOrigin: true,

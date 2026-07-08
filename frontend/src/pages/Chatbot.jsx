@@ -93,11 +93,13 @@ const Chatbot = () => {
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  useEffect(scrollToBottom, [messages]);
+  // Bọc trong block: effect KHÔNG được return giá trị của scrollIntoView —
+  // React coi giá trị trả về là hàm cleanup → "destroy is not a function" khi unmount.
+  useEffect(() => { scrollToBottom(); }, [messages]);
 
-  // Health check on mount
+  // Health check on mount — /api/health đi qua vite proxy tới chatbot (GCP :5002)
   useEffect(() => {
-    fetch('/health')
+    fetch('/api/health')
       .then(r => r.json())
       .then(d => setHealthStatus(d.status === 'ok' ? 'ok' : 'error'))
       .catch(() => setHealthStatus('error'));
