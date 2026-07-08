@@ -11,10 +11,17 @@ export default defineConfig({
   server: {
     allowedHosts: ['.trycloudflare.com', '.ngrok.io', '.vercel.app', 'localhost'],
     proxy: {
-      // ── UI backend (Express, cùng máy) ── same-origin, hết hardcode IP:port
-      // trong constants.js; bên ngoài chỉ cần mở đúng 1 port của vite.
-      '/api': {
+      // ── UI backend Express (cùng máy) ── alerts/analytics: /api/v1/*
+      // Khai báo TRƯỚC '/api' để prefix dài match trước.
+      '/api/v1': {
         target: process.env.UI_BACKEND_URL || 'http://localhost:5000',
+        changeOrigin: true,
+      },
+
+      // ── Chatbot API (GCP :5002) ── recent-incidents/stats/layer-counts/
+      // latency/chat/evidence... — same-origin, hết hardcode IP trong constants.
+      '/api': {
+        target: process.env.CHATBOT_URL || 'http://34.124.131.144:5002',
         changeOrigin: true,
       },
 
