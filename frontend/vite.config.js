@@ -11,6 +11,13 @@ export default defineConfig({
   server: {
     allowedHosts: ['.trycloudflare.com', '.ngrok.io', '.vercel.app', 'localhost'],
     proxy: {
+      // ── UI backend (Express, cùng máy) ── same-origin, hết hardcode IP:port
+      // trong constants.js; bên ngoài chỉ cần mở đúng 1 port của vite.
+      '/api': {
+        target: process.env.UI_BACKEND_URL || 'http://localhost:5000',
+        changeOrigin: true,
+      },
+
       // ── Grafana dashboard iframe ── same-origin proxy for HTTPS tunnels.
       // Grafana is configured on GCP with GF_SERVER_SERVE_FROM_SUB_PATH=true.
       [GRAFANA_PROXY_BASE]: {
