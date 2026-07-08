@@ -9,12 +9,30 @@ export const NAV_ITEMS = [
 ];
 
 // Real camera registry from camera_registry.csv — HCM District 1, matches sim + Kafka cam_id
+// So sánh song song 2 model trên CÙNG luồng (cam_XX_bbox → có person box):
+//   *_result = StreamViD-A (sva_03, AUC 0.9029, deploy) · *_a3 = MoViNet-A3 (task1, acc 0.828)
+// modelLabel hiển thị badge trên card; statusId trỏ đúng file /tmp/status_*.json qua /vio.
+const _CAMS = [
+  { base: 'cam_01', ward: 'Phường Bến Nghé',         specificLocation: 'Đường Nguyễn Huệ' },
+  { base: 'cam_02', ward: 'Phường Nguyễn Thái Bình', specificLocation: 'Đường Lê Lợi' },
+  { base: 'cam_03', ward: 'Phường Bến Thành',        specificLocation: 'Đường Nguyễn Thái Học' },
+  { base: 'cam_04', ward: 'Phường Cầu Ông Lãnh',     specificLocation: 'Đường Lê Thánh Tôn' },
+  { base: 'cam_05', ward: 'Phường Phạm Ngũ Lão',     specificLocation: 'Đường Pasteur' },
+];
+
 export const CAMERA_REGISTRY = [
-  { id: 'cam_01', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Bến Nghé',         specificLocation: 'Đường Nguyễn Huệ',          status: 'NORMAL', streamPath: 'cam_01_bbox' },
-  { id: 'cam_02', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Nguyễn Thái Bình', specificLocation: 'Đường Lê Lợi',              status: 'NORMAL', streamPath: 'cam_02_bbox' },
-  { id: 'cam_03', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Bến Thành',        specificLocation: 'Đường Nguyễn Thái Học',     status: 'NORMAL', streamPath: 'cam_03_bbox' },
-  { id: 'cam_04', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Cầu Ông Lãnh',    specificLocation: 'Đường Lê Thánh Tôn',        status: 'NORMAL', streamPath: 'cam_04_bbox' },
-  { id: 'cam_05', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Phạm Ngũ Lão',    specificLocation: 'Đường Pasteur',             status: 'NORMAL', streamPath: 'cam_05_bbox' },
+  // 5 panel StreamViD-A (model deploy)
+  ..._CAMS.map(c => ({
+    id: c.base, statusId: c.base, city: 'TP. Hồ Chí Minh', district: 'Quận 1',
+    ward: c.ward, specificLocation: c.specificLocation, status: 'NORMAL',
+    streamPath: `${c.base}_result`, modelLabel: 'StreamViD-A', modelAccent: 'emerald',
+  })),
+  // 5 panel MoViNet-A3 (so sánh) — cùng scene, cùng input bbox
+  ..._CAMS.map(c => ({
+    id: `${c.base}_a3`, statusId: `${c.base}_a3`, city: 'TP. Hồ Chí Minh', district: 'Quận 1',
+    ward: c.ward, specificLocation: c.specificLocation, status: 'NORMAL',
+    streamPath: `${c.base}_a3`, modelLabel: 'MoViNet-A3', modelAccent: 'sky',
+  })),
 ];
 
 const generateTimestamp = (daysAgo) => {

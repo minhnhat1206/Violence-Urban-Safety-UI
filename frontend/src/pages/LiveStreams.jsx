@@ -53,10 +53,12 @@ const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Poll VioMoViNet directly for real-time score + violence status (every 3s)
+  // Poll VioMoViNet directly for real-time score + violence status (every 3s).
+  // statusId phân biệt StreamViD (cam_XX) vs A3 (cam_XX_a3) → đúng file status.
   useEffect(() => {
+    const sid = camera.statusId || camera.id;
     const fetchData = () => {
-      fetch(`/vio/api/stream/status/${camera.id}`)
+      fetch(`/vio/api/stream/status/${sid}`)
         .then(r => r.ok ? r.json() : null)
         .then(d => { if (d) setCamData(d); })
         .catch(() => {});
@@ -64,7 +66,7 @@ const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
     fetchData();
     const id = setInterval(fetchData, 3000);
     return () => clearInterval(id);
-  }, [camera.id]);
+  }, [camera.statusId, camera.id]);
 
   const score = camData?.score ?? 0;
   const scorePct = Math.round(score * 100);
@@ -88,6 +90,13 @@ const CameraCard = ({ camera, onFocus, hlsUrl, alertStatus }) => {
           <div className="absolute top-2 left-2 z-10 flex items-center gap-1 px-1.5 py-0.5 bg-black/70 rounded text-xs font-bold text-red-400">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
             LIVE
+          </div>
+        )}
+
+        {camera.modelLabel && (
+          <div className={`absolute top-2 left-1/2 -translate-x-1/2 z-10 px-2 py-0.5 rounded text-xs font-bold text-white
+            ${camera.modelAccent === 'sky' ? 'bg-sky-600/85' : 'bg-emerald-600/85'}`}>
+            {camera.modelLabel}
           </div>
         )}
 
