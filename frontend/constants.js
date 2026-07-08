@@ -10,11 +10,11 @@ export const NAV_ITEMS = [
 
 // Real camera registry from camera_registry.csv — HCM District 1, matches sim + Kafka cam_id
 export const CAMERA_REGISTRY = [
-  { id: 'cam_01', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Bến Nghé',         specificLocation: 'Đường Nguyễn Huệ',          status: 'NORMAL', streamPath: 'cam_01' },
-  { id: 'cam_02', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Nguyễn Thái Bình', specificLocation: 'Đường Lê Lợi',              status: 'NORMAL', streamPath: 'cam_02' },
-  { id: 'cam_03', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Bến Thành',        specificLocation: 'Đường Nguyễn Thái Học',     status: 'NORMAL', streamPath: 'cam_03' },
-  { id: 'cam_04', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Cầu Ông Lãnh',    specificLocation: 'Đường Lê Thánh Tôn',        status: 'NORMAL', streamPath: 'cam_04' },
-  { id: 'cam_05', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Phạm Ngũ Lão',    specificLocation: 'Đường Pasteur',             status: 'NORMAL', streamPath: 'cam_05' },
+  { id: 'cam_01', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Bến Nghé',         specificLocation: 'Đường Nguyễn Huệ',          status: 'NORMAL', streamPath: 'cam_01_bbox' },
+  { id: 'cam_02', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Nguyễn Thái Bình', specificLocation: 'Đường Lê Lợi',              status: 'NORMAL', streamPath: 'cam_02_bbox' },
+  { id: 'cam_03', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Bến Thành',        specificLocation: 'Đường Nguyễn Thái Học',     status: 'NORMAL', streamPath: 'cam_03_bbox' },
+  { id: 'cam_04', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Cầu Ông Lãnh',    specificLocation: 'Đường Lê Thánh Tôn',        status: 'NORMAL', streamPath: 'cam_04_bbox' },
+  { id: 'cam_05', city: 'TP. Hồ Chí Minh', district: 'Quận 1', ward: 'Phường Phạm Ngũ Lão',    specificLocation: 'Đường Pasteur',             status: 'NORMAL', streamPath: 'cam_05_bbox' },
 ];
 
 const generateTimestamp = (daysAgo) => {
